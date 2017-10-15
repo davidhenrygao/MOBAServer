@@ -1,0 +1,8 @@
+package common;
+
+option go_package = "github.com/davidhenrygao/GolangTest/proto/common";
+
+message Extrainfo {
+	optional int32 major = 1;
+	optional int32 minor = 2;
+};

@@ -1,0 +1,18 @@
+root = "$ROOT/"
+thread = 3
+logpath = root .. "log"
+harbor = 0
+start = "main"	-- main script
+luaservice = root .. "service/?.lua;" .. root .."skynet/service/?.lua"
+lualoader = root .. "skynet/lualib/loader.lua"
+lua_path = root .. "?.lua;" .. root .. "?/init.lua;" .. root .. "lualib/?.lua;" .. root .. "skynet/lualib/?.lua;" .. root .. "skynet/lualib/?/init.lua"
+lua_cpath = root .. "skynet/luaclib/?.so;".. root .. "luaclib/?.so"
+cpath = root .. "cservice/?.so;" .. root .. "skynet/cservice/?.so"
+
+if $DAEMON then
+	logger = root .. "log/skynet.log"
+	daemon = root .. "log/skynet.pid"
+end
+
+ip = "192.168.2.188"
+port = 10086
