@@ -8,27 +8,27 @@ local MAX_PACKAGE_SIZE = 4096
 local netpackage = {}
 
 function netpackage.read(fd)
-    local str = socket.read(fd, PACKAGE_HEAD_LEN)
-    if not str then
-        log("package socket[%d] read msg head error.", fd)
+    local msglen = socket.read(fd, PACKAGE_HEAD_LEN)
+    if not msglen then
+        log("package socket[%d] read msg len error.", fd)
 	return false
     end
-    local len = string.unpack(">H", str)
+    local len = string.unpack(">H", msglen)
     if len > MAX_PACKAGE_SIZE then
         log("package length[%d] exceed %d bytes.", len, MAX_PACKAGE_SIZE)
 	return false
     end
     local msg = socket.read(fd, len)
     if not msg then
-        log("package socket[%d] read msg body error.", fd)
+        log("package socket[%d] read msg error.", fd)
 	return false
     end
     return true, msg
 end
 
 function netpackage.write(fd, msg)
-    local len = string.len(msg)
-    local sendmsg = string.pack(">H", len) .. msg
+	local fmt = string.format(">s%d", PACKAGE_HEAD_LEN)
+	local sendmsg = string.pack(fmt, msg)
     return socket.write(fd, sendmsg)
 end
 
