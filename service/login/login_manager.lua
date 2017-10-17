@@ -2,7 +2,7 @@ local skynet = require "skynet"
 local socket = require "skynet.socket"
 local cluster = require "skynet.cluster"
 require "skynet.manager"
-local crypt = require "skynet.crypt"
+local errcode = require "logic.retcode"
 
 local log = require "log"
 
@@ -15,13 +15,46 @@ local server = {
 }
 
 local server_list = {}
+local server_array = {}
 local slave_list = {}
+local login_list = {}
 local user_online = {}
 
 local CMD = {}
 
 function CMD.register_gate(name, addr)
 	server_list[name] = addr
+	table.insert(server_array, addr)
+end
+
+local counter = 0
+function CMD.prelogin(account)
+	if login_list[account] ~= nil then
+		return errcode.LOGIN_LOGINING_IN_OTHER_PLACE
+	end
+	if #server_array == 0 then
+		return errcode.LOGIN_NO_ACTIVE_GAME_SERVER
+	end
+	local onlineinfo = user_online[account]
+	if onlineinfo  ~= nil then
+		skynet.call(onlineinfo.gate, "lua", "kick", account)
+		user_online[account] = nil
+	end
+	local index = (counter % (#server_array)) + 1
+	counter = counter + 1
+	return errcode.SUCCESS, server_array[index]
+end
+
+function CMD.login(account)
+	
+end
+
+function CMD.loginfailed(account)
+	
+end
+
+function CMD.logout(account)
+	
 end
 
 local balance = 1

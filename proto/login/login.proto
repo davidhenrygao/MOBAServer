@@ -1,0 +1,21 @@
+package login;
+
+option go_package = "github.com/davidhenrygao/GolangTest/proto/login";
+
+message c2s_login{
+    /*
+       index begin from 1, and increase every re-login.
+       hashkey(a) transfer a to 8 byte key.
+
+       etoken = base64(token)+"@"+base64(subid)+":"+base64(index)
+       hmac = base64(hmac64(hashkey(etoken), secret))
+       signature = etoken+":"+hmac
+       */
+    required string signature = 1;
+};
+
+message s2c_login{
+    required int32 code = 1;
+    //player info
+    //optional player_info player= 2;
+};

@@ -6,6 +6,7 @@ local pb = require "protobuf"
 local net = require "netpackage"
 local protocol = require "protocol"
 local cmd = require "proto.cmd"
+local errcode = require "logic.retcode"
 
 local id = ...
 
@@ -57,6 +58,7 @@ local function handshake(fd)
 	local msg
 	local result
 
+	-- send challenge
 	local challenge = crypt.randomkey()
 	local s2c_challenge = {
 		challenge = crypt.base64encode(challenge),
@@ -65,28 +67,94 @@ local function handshake(fd)
 	msg = protocol.serialize(0, cmd.LOGIN_CHALLENGE, data)
 	net.write(fd, msg)
 
+	-- exchange key
 	ok, result = read_cmd_msg(fd, cmd.LOGIN_EXCHANGEKEY, "login.c2s_clientkey")
 	if not ok then
 		return false
 	end
-	local clientkey = crypt.base64decode(result.clientkey)
-	local serverkey = crypt.randomkey()
 	local s2c_serverkey = {
-		serverkey = crypt.base64encode(crypt.dhexchange(serverkey)),
+		code = errcode.SUCCESS,
 	}
+	local clientkey = crypt.base64decode(result.clientkey)
+	if #clientkey ~= 8 then
+		log("client key is not 8 byte length, got %d byte length.", #clientkey)
+		s2c_serverkey.code = errcode.LOGIN_CLIENT_KEY_LEN_ILLEGAL
+		write_cmd_msg(fd, cmd.LOGIN_EXCHANGEKEY, "login.s2c_serverkey", s2c_serverkey)
+		return false
+	end
+	local serverkey = crypt.randomkey()
+	s2c_serverkey.serverkey = crypt.base64encode(crypt.dhexchange(serverkey))
 	write_cmd_msg(fd, cmd.LOGIN_EXCHANGEKEY, "login.s2c_serverkey", s2c_serverkey)
 
+	-- handshake
 	local secret = crypt.dhsecret(clientkey, serverkey)
 	ok, result = read_cmd_msg(fd, cmd.LOGIN_HANDSHAKE, "login.c2s_handshake")
 	if not ok then
 		return false
 	end
-	local clientkey = crypt.base64decode(result.clientkey)
-	local serverkey = crypt.randomkey()
-	local s2c_serverkey = {
-		serverkey = crypt.base64encode(crypt.dhexchange(serverkey)),
+	local v = crypt.base64decode(result.encode_challenge)
+	local hmac = crypt.hmac64(challenge, secret)
+	local s2c_handshake = {
+		code = errcode.SUCCESS,
 	}
-	write_cmd_msg(fd, cmd.LOGIN_EXCHANGEKEY, "login.s2c_serverkey", s2c_serverkey)
+	if v ~= hmac then
+		s2c_handshake.code = errcode.LOGIN_HANDSHAKE_FAILED
+		write_cmd_msg(fd, cmd.LOGIN_HANDSHAKE, "login.s2c_handshake", s2c_handshake)
+		return false
+	end
+	write_cmd_msg(fd, cmd.LOGIN_HANDSHAKE, "login.s2c_handshake", s2c_handshake)
+
+	Context[fd].secret = secret
+	return true
+end
+
+local function dblogin(account, token, platform)
+	
+end
+
+local function auth(fd)
+	local ok
+	local result
+	local secret = Context[fd].secret
+
+	-- auth
+	ok, result = read_cmd_msg(fd, cmd.LOGIN_AUTH, "login.c2s_auth")
+	if not ok then
+		return false
+	end
+	local s2c_auth = {
+		code = errcode.SUCCESS,
+	}
+	local etoken = crypt.base64decode(result.token)
+	local tokenstr = crypt.desdecode(secret, crypt.base64decode(etoken))
+	local token, platform = tokenstr:match("([^@]+)@(.+)")
+	token = crypt.base64decode(token)
+	platform = crypt.base64decode(platform)
+	-- 去第三方验证token
+	-- 暂时直接将token@platform作为Account存储
+	local login_manager = skynet.localname(".manager")
+	local err, gate = skynet.call(login_manager, "lua", "prelogin", tokenstr)
+	if err ~= errcode.SUCCESS then
+		s2c_auth.code = err
+		write_cmd_msg(fd, cmd.LOGIN_AUTH, "login.s2c_auth", s2c_auth)
+		return false
+	end
+	local uid = dblogin(tokenstr, token, platform)
+	local subid
+	local server_addr
+	err, subid, server_addr = skynet.call(gate, "lua", "login", tokenstr, uid)
+	if err ~= errcode.SUCCESS then
+		skynet.call(login_manager, "lua", "loginfailed", tokenstr)
+		s2c_auth.code = err
+		write_cmd_msg(fd, cmd.LOGIN_AUTH, "login.s2c_auth", s2c_auth)
+		return false
+	end
+	skynet.call(login_manager, "lua", "login", tokenstr, subid)
+	s2c_auth.info = {
+		subid = crypt.base64encode(subid),
+		server_addr = crypt.base64encode(server_addr),
+	}
+	write_cmd_msg(fd, cmd.LOGIN_AUTH, "login.s2c_auth", s2c_auth)
 
 	return true
 end
@@ -97,6 +165,19 @@ local function handle(fd)
 		time = skynet.time(),
 	}
 	socket.start(fd)
+
+	local ok = handshake(fd)
+	if not ok then
+		socket.close(fd)
+		return
+	end
+
+	ok = auth(fd)
+	if not ok then
+		socket.close(fd)
+		return
+	end
+
 end
 
 local CMD = {}
@@ -107,6 +188,11 @@ end
 
 skynet.init( function ()
 	local load_file = {
+		"login/challenge.pb",
+		"login/exchangekey.pb",
+		"login/handshake.pb",
+		"login/auth.pb",
+		"login/login.pb",
 	}
 	for _,file in ipairs(load_file) do
 		pb.register_file(skynet.getenv("root") .. "proto/" .. file)
@@ -114,8 +200,8 @@ skynet.init( function ()
 end)
 
 skynet.start( function ()
-	skynet.dispatch("lua", function (sess, src, cmd, ...)
-		local f = CMD[cmd]
+	skynet.dispatch("lua", function (sess, src, command, ...)
+		local f = CMD[command]
 		if f then
 			if sess ~= 0 then
 				skynet.ret(skynet.pack(f(...)))
@@ -123,7 +209,7 @@ skynet.start( function ()
 				f(...)
 			end
 		else
-			log("Unknown login slave command: %s.", cmd)
+			log("Unknown login slave command: %s.", command)
 			skynet.response()(false)
 		end
 	end)

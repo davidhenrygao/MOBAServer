@@ -1,5 +1,5 @@
 local skynet = require "skynet"
---require "skynet.manager"
+require "skynet.manager"
 
 skynet.start(function()
 	skynet.error("Login server start")
@@ -10,6 +10,7 @@ skynet.start(function()
 	skynet.newservice("debug_console",8000)
 
 	local loginserver = skynet.newservice("login_manager")
+	skynet.name(".manager", loginserver)
 	
 	skynet.exit()
 end)
