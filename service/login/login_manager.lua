@@ -30,7 +30,7 @@ end
 local counter = 0
 function CMD.prelogin(account)
 	if login_list[account] ~= nil then
-		return errcode.LOGIN_LOGINING_IN_OTHER_PLACE
+		return errcode.LOGIN_PROCESSING_IN_OTHER_PLACE
 	end
 	if #server_array == 0 then
 		return errcode.LOGIN_NO_ACTIVE_GAME_SERVER
@@ -67,6 +67,10 @@ local function accept(fd, ip)
 	end
 	skynet.call(s, "lua", "handle", fd)
 end
+
+skynet.init( function ()
+	skynet.queryservice("uuidserver")
+end)
 
 skynet.start(function()
 	skynet.error("Login manager start")

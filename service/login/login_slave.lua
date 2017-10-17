@@ -7,8 +7,14 @@ local net = require "netpackage"
 local protocol = require "protocol"
 local cmd = require "proto.cmd"
 local errcode = require "logic.retcode"
+local redis = require "skynet.db.redis"
+local cjson = require "cjson"
 
 local id = ...
+
+local db
+local ACCOUNT = "account"
+local PLAYER = "player:"
 
 local Context = {}
 
@@ -109,20 +115,58 @@ local function handshake(fd)
 end
 
 local function dblogin(account, token, platform)
-	
+	local account_info
+	local account_info_str
+	local player
+	local player_str
+	local key
+	local ret = db:hexists(ACCOUNT, account)
+	if ret == 0 then
+		-- register
+		local uuidserver = skynet.queryservice("uuidserver")
+		uid = skynet.call(uuidserver, "lua", "get_player_uuid")
+		account_info = {
+			uid = uid,
+			token = token,
+			platform = platform,
+		}
+		account_info_str = cjson.encode(account_info)
+		ret = db:hset(ACCOUNT, account, account_info_str)
+		if ret == 0 then
+			return errcode.REGISTER_DB_ERR
+		end
+		player = {
+			id = account_info.id, 
+			name = "player" .. tostring(os.time()),
+			level = 1,
+			gold = 0,
+			exp = 0,
+		}
+		player_str = cjson.encode(player)
+		key = PLAYER .. tostring(account_info.id)
+		ret = db:setnx(key, player_str)
+		if ret == 0 then
+			return errcode.CREATE_PLAYER_DB_ERR
+		end
+	else
+		-- login
+		account_info_str = db:hget(ACCOUNT, account)
+		account_info = cjson.decode(account_info_str)
+	end
+	return errcode.SUCCESS, account_info.uid
 end
 
-local function auth(fd)
+local function login(fd)
 	local ok
 	local result
 	local secret = Context[fd].secret
 
-	-- auth
-	ok, result = read_cmd_msg(fd, cmd.LOGIN_AUTH, "login.c2s_auth")
+	-- login 
+	ok, result = read_cmd_msg(fd, cmd.LOGIN, "login.c2s_login")
 	if not ok then
 		return false
 	end
-	local s2c_auth = {
+	local s2c_login = {
 		code = errcode.SUCCESS,
 	}
 	local etoken = crypt.base64decode(result.token)
@@ -135,26 +179,32 @@ local function auth(fd)
 	local login_manager = skynet.localname(".manager")
 	local err, gate = skynet.call(login_manager, "lua", "prelogin", tokenstr)
 	if err ~= errcode.SUCCESS then
-		s2c_auth.code = err
-		write_cmd_msg(fd, cmd.LOGIN_AUTH, "login.s2c_auth", s2c_auth)
+		s2c_login.code = err
+		write_cmd_msg(fd, cmd.LOGIN, "login.s2c_login", s2c_login)
 		return false
 	end
-	local uid = dblogin(tokenstr, token, platform)
+	local uid 
+	err, uid = dblogin(tokenstr, token, platform)
+	if err ~= errcode.SUCCESS then
+		s2c_login.code = err
+		write_cmd_msg(fd, cmd.LOGIN, "login.s2c_login", s2c_login)
+		return false
+	end
 	local subid
 	local server_addr
 	err, subid, server_addr = skynet.call(gate, "lua", "login", tokenstr, uid)
 	if err ~= errcode.SUCCESS then
 		skynet.call(login_manager, "lua", "loginfailed", tokenstr)
-		s2c_auth.code = err
-		write_cmd_msg(fd, cmd.LOGIN_AUTH, "login.s2c_auth", s2c_auth)
+		s2c_login.code = err
+		write_cmd_msg(fd, cmd.LOGIN, "login.s2c_login", s2c_login)
 		return false
 	end
 	skynet.call(login_manager, "lua", "login", tokenstr, subid)
-	s2c_auth.info = {
+	s2c_login.info = {
 		subid = crypt.base64encode(subid),
 		server_addr = crypt.base64encode(server_addr),
 	}
-	write_cmd_msg(fd, cmd.LOGIN_AUTH, "login.s2c_auth", s2c_auth)
+	write_cmd_msg(fd, cmd.LOGIN, "login.s2c_login", s2c_login)
 
 	return true
 end
@@ -168,16 +218,19 @@ local function handle(fd)
 
 	local ok = handshake(fd)
 	if not ok then
+		log("fd[%d] handshake failed!", fd)
 		socket.close(fd)
 		return
 	end
 
-	ok = auth(fd)
+	ok = login(fd)
 	if not ok then
+		log("fd[%d] login failed!", fd)
 		socket.close(fd)
 		return
 	end
 
+	socket.close(fd)
 end
 
 local CMD = {}
@@ -191,12 +244,17 @@ skynet.init( function ()
 		"login/challenge.pb",
 		"login/exchangekey.pb",
 		"login/handshake.pb",
-		"login/auth.pb",
 		"login/login.pb",
+		"login/launch.pb",
 	}
 	for _,file in ipairs(load_file) do
 		pb.register_file(skynet.getenv("root") .. "proto/" .. file)
 	end
+	db = redis.connect {
+		host = "127.0.0.1" ,
+		port = 6379 ,
+		db = 0 ,
+	}
 end)
 
 skynet.start( function ()

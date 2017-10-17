@@ -6,10 +6,13 @@ local CMD = {
 -- 0-99 common use
     HEARTBEAT = 1,
     ECHO = 2,
+
 -- 100-199 login server use
-    LOGIN = 100,
-    CHANGENAME = 101,
-    GETPLAYERINFO = 102,
+    LOGIN_CHALLENGE = 100,
+    LOGIN_EXCHANGEKEY= 101,
+    LOGIN_HANDSHAKE = 102,
+    LOGIN = 103,
+    LOGIN_LAUNCH = 104,
 }
 
 return CMD

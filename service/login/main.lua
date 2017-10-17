@@ -11,6 +11,8 @@ skynet.start(function()
 
 	local loginserver = skynet.newservice("login_manager")
 	skynet.name(".manager", loginserver)
+
+	local uuidserver = skynet.uniqueservice("uuidserver")
 	
 	skynet.exit()
 end)
