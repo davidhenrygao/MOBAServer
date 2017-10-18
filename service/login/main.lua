@@ -12,7 +12,12 @@ skynet.start(function()
 	local loginserver = skynet.newservice("login_manager")
 	skynet.name(".manager", loginserver)
 
-	local uuidserver = skynet.uniqueservice("uuidserver")
+	skynet.uniqueservice("uuidserver")
+
+	local gateserver = skynet.newservice("gate")
+	skynet.call(gateserver, "lua", "start", {
+		name = "gate1",
+	})
 	
 	skynet.exit()
 end)

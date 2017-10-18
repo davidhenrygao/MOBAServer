@@ -124,7 +124,7 @@ local function dblogin(account, token, platform)
 	if ret == 0 then
 		-- register
 		local uuidserver = skynet.queryservice("uuidserver")
-		uid = skynet.call(uuidserver, "lua", "get_player_uuid")
+		local uid = skynet.call(uuidserver, "lua", "get_player_uuid")
 		account_info = {
 			uid = uid,
 			token = token,
@@ -192,7 +192,7 @@ local function login(fd)
 	end
 	local subid
 	local server_addr
-	err, subid, server_addr = skynet.call(gate, "lua", "login", tokenstr, uid)
+	err, subid, server_addr = skynet.call(gate, "lua", "login", tokenstr, token, uid, secret)
 	if err ~= errcode.SUCCESS then
 		skynet.call(login_manager, "lua", "loginfailed", tokenstr)
 		s2c_login.code = err

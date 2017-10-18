@@ -2,6 +2,8 @@ local skynet = require "skynet"
 local socket = require "skynet.socket"
 local log = require "log"
 local netpackage = require "netpackage"
+local protocol = require "protocol"
+--local errcode = require "logic.retcode"
 
 -- constant
 local STATE = {
@@ -17,37 +19,43 @@ local TIMEOUT = {
 local CMD = {}
 local data = {}
 
+local function self_close()
+	skynet.call(data.host, "lua", "close_conn", {
+		conn = skynet.self(),
+	})
+	socket.close(data.fd)
+	skynet.exit()
+end
+
 local function main_loop()
-    local ok
-    local msg
-    local session = 0
-    while true do
-        ok, msg = netpackage.read(data.fd)
-	if not ok then
-	    log("netpackage read failed: connection[%d] aborted.", data.fd)
-	    socket.close(data.fd)
-	    break
+	local ok
+	local msg
+	local session
+	local cmd
+	while true do
+		ok, msg = netpackage.read(data.fd)
+		if not ok then
+			log("netpackage read failed: connection[%d] aborted.", data.fd)
+			break
+		end
+		ok, session, cmd, msg = protocol.unserialize(msg)
+		if not ok then
+			log("Connection[%d] protocol unserialize failed.", data.fd)
+			log("Close socket[%d].", data.fd)
+			break
+		end
+		data.time = skynet.time()
+		skynet.send(data.dest, "lua", "dispatch", skynet.self(), session, cmd, msg)
 	end
-	data.time = skynet.time()
-	session = session + 1
-	skynet.send(data.dest, "lua", "dispatch", skynet.self(), session, msg)
-    end
-    skynet.call(data.host, "lua", "close_conn", {
-	conn = skynet.self(),
-    })
-    socket.close(data.fd)
-    skynet.exit()
+	self_close()
 end
 
 local function init_state_selfcheck()
-    local interval = skynet.time() - data.time
-    if interval > TIMEOUT.INIT then
-	log("fd[%d] connection init timeout[%d].", data.fd, interval)
-        skynet.call(data.host, "lua", "close_conn", {
-	    conn = skynet.self(),
-	})
-	socket.close(data.fd)
-    end
+	local interval = skynet.time() - data.time
+	if interval > TIMEOUT.INIT then
+		log("fd[%d] connection init timeout[%d].", data.fd, interval)
+		self_close()
+	end
 end
 
 local function login_state_selfcheck()
@@ -86,6 +94,11 @@ end
 function CMD.change_dest(dest)
     log("change_dest from [%d] to [%d].", data.dest, dest)
     data.dest = dest
+end
+
+function CMD.force_close()
+	socket.close_fd(data.fd)
+	skynet.exit()
 end
 
 skynet.start( function ()
