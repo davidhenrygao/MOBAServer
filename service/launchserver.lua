@@ -2,13 +2,7 @@ local skynet = require "skynet"
 local log = require "log"
 local crypt = require "skynet.crypt"
 local pb = require "protobuf"
-local redis = require "skynet.db.redis"
-local cjson = require "cjson"
 local cmd = require "proto.cmd"
-
-local db
-local ACCOUNT = "account"
-local PLAYER = "player:"
 
 local protostr = "login.launch"
 
@@ -78,18 +72,57 @@ function CMD.dispatch(source, sess, req_cmd, msg)
 		return
 	end
 	local u = login_player[username]
-	local agent = skynet.newservice("agent", skynet.self(), u.uid)
+	if u.launch ~= nil then
+		log("Another client had been lauch!")
+		close_conn(source)
+		return
+	end
+	u.launch = "launching"
+	local agent = u.agent
+	if agent == nil then
+		agent = skynet.newservice("agent", skynet.self())
+		u.agent = agent
+	end
+	ok = skynet.call(agent, "lua", "launch", source, username, sess, req_cmd, u.uid)
+	if not ok then
+		u.launch = nil
+	else
+		u.launch = "launch"
+	end
+
 	skynet.call(source, "lua", "change_dest", agent)
+	u.conn = source
 
 	u.idx = u.idx + 1
 end
 
+function CMD.kick(username)
+	local login_info = login_player[username]
+	if login_info == nil then
+		return
+	end
+	if login_info.conn ~= nil then
+		close_conn(login_info.conn)
+	end
+	if login_info.agent ~= nil then
+		skynet.call(login_info.agent, "lua", "kick")
+	end
+	login_player[username] = nil
+end
+
+function CMD.logout(username)
+	local login_info = login_player[username]
+	if login_info == nil then
+		return
+	end
+	if login_info.conn ~= nil then
+		close_conn(login_info.conn)
+	end
+	skynet.call(gate, "lua", "logout", login_info.account)
+	login_player[username] = nil
+end
+
 skynet.init( function ()
-	db = redis.connect {
-		host = "127.0.0.1" ,
-		port = 6379 ,
-		db = 0 ,
-	}
 	local file = skynet.getenv("root") .. "proto/login/launch.pb"
 	pb.register_file(file)
 end)

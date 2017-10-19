@@ -1,9 +1,8 @@
 PLAT = linux
 SKYNET_PATH = skynet
 
-all: skynet
+all: $(SKYNET_PATH)/skynet
 
-skynet:
 $(SKYNET_PATH)/skynet: $(SKYNET_PATH)/Makefile
 	cd $(SKYNET_PATH) && $(MAKE) $(PLAT)
 

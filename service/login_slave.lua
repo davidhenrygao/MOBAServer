@@ -186,6 +186,7 @@ local function login(fd)
 	local uid 
 	err, uid = dblogin(tokenstr, token, platform)
 	if err ~= errcode.SUCCESS then
+		skynet.call(login_manager, "lua", "loginfailed", tokenstr)
 		s2c_login.code = err
 		write_cmd_msg(fd, cmd.LOGIN, "login.s2c_login", s2c_login)
 		return false
@@ -199,7 +200,7 @@ local function login(fd)
 		write_cmd_msg(fd, cmd.LOGIN, "login.s2c_login", s2c_login)
 		return false
 	end
-	skynet.call(login_manager, "lua", "login", tokenstr, subid)
+	skynet.call(login_manager, "lua", "login", tokenstr, gate)
 	s2c_login.info = {
 		subid = crypt.base64encode(subid),
 		server_addr = crypt.base64encode(server_addr),

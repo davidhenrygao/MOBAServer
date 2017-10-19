@@ -9,10 +9,10 @@ skynet.start(function()
 	end
 	skynet.newservice("debug_console",8000)
 
+	skynet.uniqueservice("uuidserver")
+
 	local loginserver = skynet.newservice("login_manager")
 	skynet.name(".manager", loginserver)
-
-	skynet.uniqueservice("uuidserver")
 
 	local gateserver = skynet.newservice("gate")
 	skynet.call(gateserver, "lua", "start", {

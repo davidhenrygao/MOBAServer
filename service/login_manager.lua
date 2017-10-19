@@ -1,6 +1,6 @@
 local skynet = require "skynet"
 local socket = require "skynet.socket"
-local cluster = require "skynet.cluster"
+--local cluster = require "skynet.cluster"
 require "skynet.manager"
 local errcode = require "logic.retcode"
 
@@ -40,21 +40,25 @@ function CMD.prelogin(account)
 		skynet.call(onlineinfo.gate, "lua", "kick", account)
 		user_online[account] = nil
 	end
+	login_list[account] = true
 	local index = (counter % (#server_array)) + 1
 	counter = counter + 1
 	return errcode.SUCCESS, server_array[index]
 end
 
-function CMD.login(account)
-	
+function CMD.login(account, gate)
+	user_online[account] = {
+		gate = gate,
+	}
+	login_list[account] = nil
 end
 
 function CMD.loginfailed(account)
-	
+	login_list[account] = nil
 end
 
 function CMD.logout(account)
-	
+	user_online[account] = nil
 end
 
 local balance = 1
@@ -74,7 +78,7 @@ end)
 
 skynet.start(function()
 	skynet.error("Login manager start")
-	cluster.register("loginserver")
+	--cluster.register("loginserver")
 	
 	skynet.dispatch("lua", function (sess, src, cmd, ...)
 		local f = CMD[cmd]
@@ -100,5 +104,5 @@ skynet.start(function()
 	local fd = socket.listen(ip, port)
 	socket.start(fd, accept)
 
-	cluster.open("loginserver")
+	--cluster.open("loginserver")
 end)
