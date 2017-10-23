@@ -16,8 +16,10 @@ local player_info
 
 local player_username
 
-function CMD.kill()
-	skynet.exit()
+function CMD.kick()
+	skynet.fork( function ()
+		skynet.exit()
+	end)
 end
 
 function CMD.launch(dest, username, sess, cmd, uid)
@@ -39,16 +41,20 @@ function CMD.launch(dest, username, sess, cmd, uid)
 	return true
 end
 
+function CMD.conn_abort()
+	skynet.call(host, "lua", "conn_abort", player_username)
+	return
+end
+
 local function logout(source, sess, req_cmd, msg)
-	--[[
 	local s2c_logout = {
 		code = retcode.SUCCESS,
 	}
-	local resp_f = response(source, pb, sess, req_cmd, "login.s2c_logout")
+	local resp_f = response(source, pb, sess, req_cmd, "player.s2c_logout")
 	resp_f(s2c_logout)
-	--]]
 
 	skynet.call(host, "lua", "logout", player_username)
+	log("reach here.")
 	skynet.exit()
 end
 

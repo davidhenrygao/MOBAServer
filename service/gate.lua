@@ -56,7 +56,7 @@ function CMD.login(account, token, uid, secret)
 	internal_id = internal_id + 1
 	local username = string.format("%s@%s", 
 		crypt.base64encode(token), crypt.base64encode(subid))
-	skynet.call(data.launchserver, "lua", "login", subid, username, uid, secret)
+	skynet.call(data.launchserver, "lua", "login", account, subid, username, uid, secret)
 	local server_addr = data.ip .. ":" .. tostring(data.port)
 	login_account_info[account] = {
 		username = username,
@@ -87,8 +87,10 @@ end
 
 function CMD.force_close_conn(conn)
 	assert(conn)
-	skynet.call(conn, "lua", "force_close")
-	conns[conn] = nil
+	if conns[conn] ~= nil then
+		skynet.send(conn, "lua", "force_close")
+		conns[conn] = nil
+	end
 end
 
 skynet.init( function ()

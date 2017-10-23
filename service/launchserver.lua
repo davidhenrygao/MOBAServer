@@ -12,8 +12,9 @@ local login_player = {}
 
 local CMD = {}
 
-function CMD.login(subid, username, uid, secret)
+function CMD.login(account, subid, username, uid, secret)
 	login_player[username] = {
+		account = account,
 		subid = subid, 
 		secret = secret,
 		uid = uid,
@@ -111,6 +112,16 @@ function CMD.dispatch(source, sess, req_cmd, msg)
 	u.conn = source
 
 	u.idx = u.idx + 1
+end
+
+function CMD.conn_abort(username)
+	if username ~= nil then
+		local u = login_player[username]
+		if u ~= nil then
+			u.launch = nil
+		end
+	end
+	return
 end
 
 function CMD.kick(username)

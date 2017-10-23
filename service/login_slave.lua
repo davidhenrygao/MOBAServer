@@ -149,7 +149,7 @@ local function dblogin(account, token, platform)
 			return errcode.REGISTER_DB_ERR
 		end
 		player = {
-			id = account_info.id, 
+			id = account_info.uid, 
 			name = "player" .. tostring(os.time()),
 			level = 1,
 			gold = 0,

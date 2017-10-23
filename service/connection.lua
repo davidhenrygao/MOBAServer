@@ -23,6 +23,7 @@ local function self_close()
 	skynet.call(data.host, "lua", "close_conn", {
 		conn = skynet.self(),
 	})
+	skynet.call(data.dest, "lua", "conn_abort")
 	socket.close(data.fd)
 	skynet.exit()
 end
