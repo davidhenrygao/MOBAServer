@@ -25,6 +25,7 @@ local function read_cmd_msg(fd, expect_cmd, protostr)
 	local ok
 	local msg
 	local result
+	local err
 	ok, msg = net.read(fd)
 	if not ok then
 		log("cmd[%d] netpackage read failed: connection[%d] aborted.", 
@@ -41,9 +42,9 @@ local function read_cmd_msg(fd, expect_cmd, protostr)
 		log("Expect cmd[%d], get cmd[%d].", expect_cmd, req_cmd)
 		return false
 	end
-	ok, result = pcall(pb.decode, protostr, data)
-	if not ok then
-		log("cmd[%d] protobuf decode error.", expect_cmd)
+	result, err = pb.decode(protostr, data)
+	if err ~= nil then
+		log("cmd[%d] protobuf decode error: %s.", expect_cmd, err)
 		return false
 	end
 	Context[fd].session = sess
@@ -52,9 +53,21 @@ local function read_cmd_msg(fd, expect_cmd, protostr)
 	return true, result
 end
 
+
 local function write_cmd_msg(fd, proto_cmd, protostr, orgdata)
 	local data = pb.encode(protostr, orgdata)
 	local msg = protocol.serialize(Context[fd].session, proto_cmd, data)
+	--[[
+	local function strtohex(str)
+		local len = str:len()
+		local fmt = "0X"
+		for i=1,len do
+			fmt = fmt .. string.format("%02x", str:byte(i))
+		end
+		return fmt
+	end
+	log("write_cmd_msg: %s.\n", strtohex(msg))
+	--]]
 	net.write(fd, msg)
 end
 
@@ -74,7 +87,7 @@ local function handshake(fd)
 	net.write(fd, msg)
 
 	-- exchange key
-	ok, result = read_cmd_msg(fd, cmd.LOGIN_EXCHANGEKEY, "login.c2s_clientkey")
+	ok, result = read_cmd_msg(fd, cmd.LOGIN_EXCHANGEKEY, "login.c2s_exchangekey")
 	if not ok then
 		return false
 	end
@@ -85,12 +98,12 @@ local function handshake(fd)
 	if #clientkey ~= 8 then
 		log("client key is not 8 byte length, got %d byte length.", #clientkey)
 		s2c_serverkey.code = errcode.LOGIN_CLIENT_KEY_LEN_ILLEGAL
-		write_cmd_msg(fd, cmd.LOGIN_EXCHANGEKEY, "login.s2c_serverkey", s2c_serverkey)
+		write_cmd_msg(fd, cmd.LOGIN_EXCHANGEKEY, "login.s2c_exchangekey", s2c_serverkey)
 		return false
 	end
 	local serverkey = crypt.randomkey()
 	s2c_serverkey.serverkey = crypt.base64encode(crypt.dhexchange(serverkey))
-	write_cmd_msg(fd, cmd.LOGIN_EXCHANGEKEY, "login.s2c_serverkey", s2c_serverkey)
+	write_cmd_msg(fd, cmd.LOGIN_EXCHANGEKEY, "login.s2c_exchangekey", s2c_serverkey)
 
 	-- handshake
 	local secret = crypt.dhsecret(clientkey, serverkey)
@@ -99,7 +112,7 @@ local function handshake(fd)
 		return false
 	end
 	local v = crypt.base64decode(result.encode_challenge)
-	local hmac = crypt.hmac64(challenge, secret)
+	local hmac = crypt.hmac64_md5(challenge, secret)
 	local s2c_handshake = {
 		code = errcode.SUCCESS,
 	}
@@ -143,7 +156,7 @@ local function dblogin(account, token, platform)
 			exp = 0,
 		}
 		player_str = cjson.encode(player)
-		key = PLAYER .. tostring(account_info.id)
+		key = PLAYER .. tostring(account_info.uid)
 		ret = db:setnx(key, player_str)
 		if ret == 0 then
 			return errcode.CREATE_PLAYER_DB_ERR
@@ -170,7 +183,7 @@ local function login(fd)
 		code = errcode.SUCCESS,
 	}
 	local etoken = crypt.base64decode(result.token)
-	local tokenstr = crypt.desdecode(secret, crypt.base64decode(etoken))
+	local tokenstr = crypt.desdecode(secret, etoken)
 	local token, platform = tokenstr:match("([^@]+)@(.+)")
 	token = crypt.base64decode(token)
 	platform = crypt.base64decode(platform)

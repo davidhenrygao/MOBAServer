@@ -97,8 +97,11 @@ function CMD.change_dest(dest)
 end
 
 function CMD.force_close()
-	socket.close_fd(data.fd)
-	skynet.exit()
+	--socket.close_fd(data.fd) --will assert panic
+	socket.close(data.fd)
+	skynet.fork( function ()
+		skynet.exit()
+	end)
 end
 
 skynet.start( function ()

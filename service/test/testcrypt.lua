@@ -45,5 +45,14 @@ skynet.start(function()
 	log("key: %s.", key)
 	log("hashkey(key): %s.", strtohex(crypt.hashkey(key)))
 
+	local token = crypt.base64encode("david")
+	local platform = crypt.base64encode("finyin")
+	local tp = token .. "@" .. platform
+	local etp = crypt.desencode(secret1, tp)
+	log("base64(DES(secret, base64(token)+\"@\"+base64(platform))): %s.", 
+		crypt.base64encode(etp))
+	local dtp = crypt.desdecode(secret1, etp)
+	log("DES(secret, etp) decode: %s.", dtp)
+
 	skynet.exit()
 end)

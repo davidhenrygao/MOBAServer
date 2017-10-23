@@ -4,7 +4,7 @@ local crypt = require "skynet.crypt"
 local pb = require "protobuf"
 local cmd = require "proto.cmd"
 
-local protostr = "login.launch"
+local protostr = "login.c2s_launch"
 
 local gate = ...
 
@@ -33,7 +33,8 @@ local function verify_signature(username, index, hmac)
 		log("User haven't login.")
 		return false
 	end
-	local ok, idx = pcall(tonumber, index)
+	local idxStr = crypt.base64decode(index)
+	local ok, idx = pcall(tonumber, idxStr)
 	if not ok then
 		log("Signature format error: index not a number.")
 		return false
@@ -43,7 +44,23 @@ local function verify_signature(username, index, hmac)
 		return false
 	end
 	local text = string.format("%s:%s", username, index)
-	local v = crypt.hmac_hash(u.secret, text)
+	local hashkey = crypt.hashkey(text)
+	local v = crypt.base64encode(crypt.hmac64_md5(hashkey, u.secret))
+	--[[
+	local function strtohex(str)
+		local len = str:len()
+		local fmt = "0X"
+		for i=1,len do
+			fmt = fmt .. string.format("%02x", str:byte(i))
+		end
+		return fmt
+	end
+	log("token: %s.", text)
+	log("secret: %s.", strtohex(u.secret))
+	log("hashkey: %s.", strtohex(hashkey))
+	log("hmac: %s.", hmac)
+	log("v: %s.", v)
+	--]]
 	if v ~= hmac then
 		log("Signature hmac not match.")
 		return false
@@ -57,15 +74,15 @@ function CMD.dispatch(source, sess, req_cmd, msg)
 		close_conn(source)
 		return
 	end
-	local ok, result = pcall(pb.decode, protostr, msg)
-	if not ok then
-		log("Launch server protobuf decode cmd[%d] error.", req_cmd)
+	local result, err = pb.decode(protostr, msg)
+	if err ~= nil then
+		log("Launch server protobuf decode cmd[%d] error(%s).", req_cmd, err)
 		close_conn(source)
-		return
+		return false
 	end
 	local c2s_launch = result
 	local username, index, hmac = string.match(c2s_launch.signature, "([^:]*):([^:]*):([^:]*)")
-	ok = verify_signature(username, index, hmac)
+	local ok = verify_signature(username, index, hmac)
 	if not ok then
 		log("Launch server cmd[%d] verify signature error.", req_cmd)
 		close_conn(source)
