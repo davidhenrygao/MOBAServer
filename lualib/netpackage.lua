@@ -29,6 +29,17 @@ end
 function netpackage.write(fd, msg)
 	local fmt = string.format(">s%d", PACKAGE_HEAD_LEN)
 	local sendmsg = string.pack(fmt, msg)
+	--[[
+	local function strtohex(str)
+		local len = str:len()
+		local fmt = "0X"
+		for i=1,len do
+			fmt = fmt .. string.format("%02x", str:byte(i))
+		end
+		return fmt
+	end
+	log("write_cmd_msg: %s.\n", strtohex(sendmsg))
+	--]]
     return socket.write(fd, sendmsg)
 end
 

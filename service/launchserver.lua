@@ -35,8 +35,8 @@ local function verify_signature(username, index, hmac)
 		return false
 	end
 	local idxStr = crypt.base64decode(index)
-	local ok, idx = pcall(tonumber, idxStr)
-	if not ok then
+	local idx = tonumber(idxStr)
+	if not idx then
 		log("Signature format error: index not a number.")
 		return false
 	end
