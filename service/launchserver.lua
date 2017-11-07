@@ -4,7 +4,7 @@ local crypt = require "skynet.crypt"
 local pb = require "protobuf"
 local cmd = require "proto.cmd"
 
-local protostr = "login.c2s_launch"
+local protostr = "protocol.c2s_launch"
 
 local gate = ...
 

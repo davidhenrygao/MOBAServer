@@ -14,6 +14,6 @@ end
 return {
     cmd = cmd.ECHO, 
     handler = execute_f,
-	protoname = "player.c2s_echo",
-	resp_protoname = "player.s2c_echo",
+	protoname = "protocol.c2s_echo",
+	resp_protoname = "protocol.s2c_echo",
 }

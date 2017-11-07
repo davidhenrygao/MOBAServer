@@ -33,7 +33,7 @@ function CMD.launch(dest, username, sess, cmd, uid)
 		s2c_launch.code = err
 		return false
 	end
-	local resp_f = response(dest, pb, sess, cmd, "login.s2c_launch")
+	local resp_f = response(dest, pb, sess, cmd, "protocol.s2c_launch")
 	s2c_launch.player = player_info
 	resp_f(s2c_launch)
 
@@ -50,7 +50,7 @@ local function logout(source, sess, req_cmd, msg)
 	local s2c_logout = {
 		code = retcode.SUCCESS,
 	}
-	local resp_f = response(source, pb, sess, req_cmd, "player.s2c_logout")
+	local resp_f = response(source, pb, sess, req_cmd, "protocol.s2c_logout")
 	resp_f(s2c_logout)
 
 	skynet.call(host, "lua", "logout", player_username)

@@ -1,4 +1,4 @@
-package login;
+package protocol;
 
 message c2s_launch{
     /*

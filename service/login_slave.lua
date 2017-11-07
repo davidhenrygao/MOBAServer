@@ -81,12 +81,12 @@ local function handshake(fd)
 	local s2c_challenge = {
 		challenge = crypt.base64encode(challenge),
 	}
-	data = pb.encode("login.s2c_challenge", s2c_challenge)
+	data = pb.encode("protocol.s2c_challenge", s2c_challenge)
 	msg = protocol.serialize(0, cmd.LOGIN_CHALLENGE, data)
 	net.write(fd, msg)
 
 	-- exchange key
-	ok, result = read_cmd_msg(fd, cmd.LOGIN_EXCHANGEKEY, "login.c2s_exchangekey")
+	ok, result = read_cmd_msg(fd, cmd.LOGIN_EXCHANGEKEY, "protocol.c2s_exchangekey")
 	if not ok then
 		return false
 	end
@@ -98,20 +98,20 @@ local function handshake(fd)
 	if #clientkey ~= 8 then
 		log("client key is not 8 byte length, got %d byte length.", #clientkey)
 		s2c_serverkey.code = errcode.LOGIN_CLIENT_KEY_LEN_ILLEGAL
-		write_cmd_msg(fd, cmd.LOGIN_EXCHANGEKEY, "login.s2c_exchangekey", s2c_serverkey)
+		write_cmd_msg(fd, cmd.LOGIN_EXCHANGEKEY, "protocol.s2c_exchangekey", s2c_serverkey)
 		return false
 	end
 	local serverkey = crypt.randomkey()
 	--log("serverkey: %s.\n", strtohex(serverkey))
 	s2c_serverkey.serverkey = crypt.base64encode(crypt.dhexchange(serverkey))
 	--log("client will recieve serverkey: %s.\n", strtohex(crypt.dhexchange(serverkey)))
-	write_cmd_msg(fd, cmd.LOGIN_EXCHANGEKEY, "login.s2c_exchangekey", s2c_serverkey)
+	write_cmd_msg(fd, cmd.LOGIN_EXCHANGEKEY, "protocol.s2c_exchangekey", s2c_serverkey)
 
 	-- handshake
 	local secret = crypt.dhsecret(clientkey, serverkey)
 	--log("secret: %s.\n", strtohex(secret))
 	--log("base64(secret) : %s.\n", crypt.base64encode(secret))
-	ok, result = read_cmd_msg(fd, cmd.LOGIN_HANDSHAKE, "login.c2s_handshake")
+	ok, result = read_cmd_msg(fd, cmd.LOGIN_HANDSHAKE, "protocol.c2s_handshake")
 	if not ok then
 		return false
 	end
@@ -122,10 +122,10 @@ local function handshake(fd)
 	}
 	if v ~= hmac then
 		s2c_handshake.code = errcode.LOGIN_HANDSHAKE_FAILED
-		write_cmd_msg(fd, cmd.LOGIN_HANDSHAKE, "login.s2c_handshake", s2c_handshake)
+		write_cmd_msg(fd, cmd.LOGIN_HANDSHAKE, "protocol.s2c_handshake", s2c_handshake)
 		return false
 	end
-	write_cmd_msg(fd, cmd.LOGIN_HANDSHAKE, "login.s2c_handshake", s2c_handshake)
+	write_cmd_msg(fd, cmd.LOGIN_HANDSHAKE, "protocol.s2c_handshake", s2c_handshake)
 
 	Context[fd].secret = secret
 	return true
@@ -188,7 +188,7 @@ local function login(fd)
 	local secret = Context[fd].secret
 
 	-- login 
-	ok, result = read_cmd_msg(fd, cmd.LOGIN, "login.c2s_login")
+	ok, result = read_cmd_msg(fd, cmd.LOGIN, "protocol.c2s_login")
 	if not ok then
 		return false
 	end
@@ -210,7 +210,7 @@ local function login(fd)
 	local err, gate = skynet.call(login_manager, "lua", "prelogin", openid)
 	if err ~= errcode.SUCCESS then
 		s2c_login.code = err
-		write_cmd_msg(fd, cmd.LOGIN, "login.s2c_login", s2c_login)
+		write_cmd_msg(fd, cmd.LOGIN, "protocol.s2c_login", s2c_login)
 		return false
 	end
 	local uid 
@@ -218,7 +218,7 @@ local function login(fd)
 	if err ~= errcode.SUCCESS then
 		skynet.call(login_manager, "lua", "loginfailed", openid)
 		s2c_login.code = err
-		write_cmd_msg(fd, cmd.LOGIN, "login.s2c_login", s2c_login)
+		write_cmd_msg(fd, cmd.LOGIN, "protocol.s2c_login", s2c_login)
 		return false
 	end
 	local subid
@@ -227,7 +227,7 @@ local function login(fd)
 	if err ~= errcode.SUCCESS then
 		skynet.call(login_manager, "lua", "loginfailed", openid)
 		s2c_login.code = err
-		write_cmd_msg(fd, cmd.LOGIN, "login.s2c_login", s2c_login)
+		write_cmd_msg(fd, cmd.LOGIN, "protocol.s2c_login", s2c_login)
 		return false
 	end
 	skynet.call(login_manager, "lua", "login", openid, gate)
@@ -235,7 +235,7 @@ local function login(fd)
 		subid = crypt.base64encode(subid),
 		server_addr = crypt.base64encode(server_addr),
 	}
-	write_cmd_msg(fd, cmd.LOGIN, "login.s2c_login", s2c_login)
+	write_cmd_msg(fd, cmd.LOGIN, "protocol.s2c_login", s2c_login)
 
 	return true
 end

@@ -1,13 +1,13 @@
 
-é
-launch.protologin"
+ï
+launch.protoprotocol"
 
 c2s_launch
-	signature (	"°
+	signature (	"³
 
 s2c_launch
-code (-
-player (2.login.s2c_launch.player_infoe
+code (0
+player (2 .protocol.s2c_launch.player_infoe
 player_info
 
 id (

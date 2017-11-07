@@ -1,7 +1,7 @@
-package login;
+package protocol;
 
 message c2s_login{
-    required uint32 platformid = 1;
+	required uint32 platformid = 1;
     required string openid = 2;
     optional string unionid = 3;
     optional string nickname = 4;
