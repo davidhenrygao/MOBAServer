@@ -5,15 +5,15 @@ local handle = require "logic.player"
 local retcode = require "logic.retcode"
 local command = require "proto.cmd"
 local pb = require "protobuf"
+local player_mgr = require "logic.libs.player.player_mgr"
 
 local host = ...
 
-local db
+-- local db
 
 local CMD = {}
 
-local player_info
-
+local player
 local player_username
 
 function CMD.kick()
@@ -27,17 +27,23 @@ function CMD.launch(dest, username, sess, cmd, uid)
 	local s2c_launch = {
 		code = retcode.SUCCESS,
 	}
-	err, player_info = skynet.call(db, "lua", "launch_player", uid)
+	player = player_mgr:new()
+	err = player:init(uid)
 	if err ~= retcode.SUCCESS then
-		log("Player(%d) agent launch failed!", uid)
+		log("Player(%d) agent launch failed: err(%d)!", uid, err)
 		s2c_launch.code = err
 		return false
 	end
+
 	local resp_f = response(dest, pb, sess, cmd, "protocol.s2c_launch")
-	s2c_launch.player = player_info
+	s2c_launch.player = player:get_basic_info()
 	resp_f(s2c_launch)
 
 	player_username = username
+
+	-- test
+	-- cards = player:get_cards()
+	-- card_decks = player:get_card_decks()
 	return true
 end
 
@@ -54,7 +60,10 @@ local function logout(source, sess, req_cmd, msg)
 	resp_f(s2c_logout)
 
 	skynet.call(host, "lua", "logout", player_username)
-	log("reach here.")
+
+	player:save()
+	log("save player.")
+
 	skynet.exit()
 end
 
@@ -81,13 +90,13 @@ function CMD.dispatch(source, sess, req_cmd, msg)
 		session = sess,
 		cmd = req_cmd,
 		args = args,
-		playerinfo = player_info
+		player = player
 	}
 	f(req, resp_f)
 end
 
 skynet.init( function ()
-	db = skynet.queryservice("db")
+	-- db = skynet.queryservice("db")
 
 	-- use lfs to load later.
 	local files = {
