@@ -1,6 +1,6 @@
 
- 
-	cmd.protoprotocol*ˆ
+º
+	cmd.protoprotocol*¢
 cmd
 	HEARTBEAT
 ECHO
@@ -10,4 +10,14 @@
 LOGIN_EXCHANGEKEYe
 LOGIN_HANDSHAKEf	
 LOGINg
-LOGIN_LAUNCHh
+LOGIN_LAUNCHh
+
+LOAD_CARDSè
+LOAD_CARD_DECKSé
+UP_CARD_LEVELê
+
+CHECK_CARDë
+CHANGE_DECKì
+CHANGE_CARD_DECKí
+UPDATE_CARDSî
+GM_GET_CARDï

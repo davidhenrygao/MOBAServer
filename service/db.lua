@@ -8,14 +8,16 @@ local CMD = {}
 
 local db
 local PLAYER = "player:"
-local CARD = "card@"
+local CARD = "card:"
+local CARD_DECK = "card_deck:"
 
 local function createplayerdbcardsinfo(playerkey)
 	local open_card_set = { 1001, 2001, 3001, 4001, 1002, 2002, 3002, 4002 }
 	local unlock_card_set = { 1003, 2003, 3003, 4003 }
-	local player_card_info = {
-		cards = {},
-		card_decks = {},
+	local cards = {}
+	local card_decks = {
+		cur_deck_index = 1,
+		decks = {}
 	}
 	for idx, card_id in ipairs(open_card_set) do
 		local card = {
@@ -27,16 +29,16 @@ local function createplayerdbcardsinfo(playerkey)
 		if idx > 6 then
 			card.state = 1
 		end
-		table.insert(player_card_info.cards, card)
+		table.insert(cards, card)
 	end
 	for _, card_id in ipairs(unlock_card_set) do
 		local card = {
 			id = card_id,
-			level = 0,
+			level = 1,
 			amount = 0,
 			state = 0,
 		}
-		table.insert(player_card_info.cards, card)
+		table.insert(cards, card)
 	end
 	for i=1,3 do
 		local card_deck = {
@@ -53,11 +55,17 @@ local function createplayerdbcardsinfo(playerkey)
 			}
 			table.insert(card_deck.elems, elem)
 		end
-		table.insert(player_card_info.card_decks, card_deck)
+		table.insert(card_decks.decks, card_deck)
 	end
 	local key = CARD .. playerkey
-	local card_info_str = cjson.encode(player_card_info)
-	local ret = db:set(key, card_info_str)
+	local cards_str = cjson.encode(cards)
+	local ret = db:set(key, cards_str)
+	if ret == 0 then
+		return retcode.CREATE_PLAYER_CARD_INFO_DB_ERR
+	end
+	key = CARD_DECK .. playerkey
+	local card_decks_str = cjson.encode(card_decks)
+	ret = db:set(key, card_decks_str)
 	if ret == 0 then
 		return retcode.CREATE_PLAYER_CARD_INFO_DB_ERR
 	end
@@ -76,21 +84,38 @@ function CMD.launch_player_basic_info(uid)
     return retcode.SUCCESS, player_basic_info
 end
 
-function CMD.launch_player_card_info(uid)
+function CMD.launch_player_cards(uid)
 	local ret
-	local key = PLAYER .. string.format("%d", uid)
-	local player_card_info_str = db:get(CARD .. key)
-	if player_card_info_str == nil then
+	local key = string.format("%d", uid)
+	local player_cards_str = db:get(CARD .. key)
+	if player_cards_str == nil then
 		ret = createplayerdbcardsinfo(key)
 		if ret ~= retcode.SUCCESS then
 			return ret
 		end
 	end
-	player_card_info_str = db:get(CARD .. key)
+	player_cards_str = db:get(CARD .. key)
 
-	local player_card_info = cjson.decode(player_card_info_str)
+	local player_cards = cjson.decode(player_cards_str)
 
-    return retcode.SUCCESS, player_card_info
+    return retcode.SUCCESS, player_cards
+end
+
+function CMD.launch_player_card_decks(uid)
+	local ret
+	local key = string.format("%d", uid)
+	local player_card_decks_str = db:get(CARD_DECK .. key)
+	if player_card_decks_str == nil then
+		ret = createplayerdbcardsinfo(key)
+		if ret ~= retcode.SUCCESS then
+			return ret
+		end
+	end
+	player_card_decks_str = db:get(CARD_DECK .. key)
+
+	local player_card_decks = cjson.decode(player_card_decks_str)
+
+    return retcode.SUCCESS, player_card_decks
 end
 
 skynet.init( function ()

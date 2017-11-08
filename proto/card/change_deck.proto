@@ -1,6 +1,6 @@
 package protocol;
 
-message c2s_change__deck{
+message c2s_change_deck{
     required uint32 index = 1;    //卡组索引
 };
 

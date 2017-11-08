@@ -4,11 +4,12 @@ local retcode = require "logic.retcode"
 
 local card_mgr = require "logic.libs.player.card_mgr"
 
+local player_mgr = {}
 local M = {}
 
-function M:new()
+function player_mgr:new()
 	local object = {}
-	setmetatable(object, { __index = self, })
+	setmetatable(object, { __index = M, })
 	return object
 end
 
@@ -40,12 +41,27 @@ function M:get_basic_info()
 	return self.basic_info
 end
 
-function M:get_cards()
-	return self.card_info:get_cards()
+function M:get_card_set()
+	return self.card_info:get_card_set()
 end
 
-function M:get_card_decks()
-	return self.card_info:get_card_decks()
+function M:get_card_deck()
+	return self.card_info:get_card_deck()
 end
 
-return M
+function M:is_exist(id)
+	if self.cardsbyid[id] ~= nil then
+		return true
+	end
+	return false
+end
+
+function M:unlock_card(id)
+	
+end
+
+function M:add_card(id, amount)
+	
+end
+
+return player_mgr

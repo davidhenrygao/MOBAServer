@@ -1,6 +1,6 @@
 local skynet = require "skynet"
 local log = require "log"
-local response = require "response"
+local msgsender = require "msgsender"
 local handle = require "logic.player"
 local retcode = require "logic.retcode"
 local command = require "proto.cmd"
@@ -35,15 +35,14 @@ function CMD.launch(dest, username, sess, cmd, uid)
 		return false
 	end
 
-	local resp_f = response(dest, pb, sess, cmd, "protocol.s2c_launch")
+	msgsender:set_dest(dest)
+	msgsender:set_pb(pb)
+	local resp_f = msgsender:gen_respf(sess, cmd, "protocol.s2c_launch")
 	s2c_launch.player = player:get_basic_info()
 	resp_f(s2c_launch)
 
 	player_username = username
 
-	-- test
-	-- cards = player:get_cards()
-	-- card_decks = player:get_card_decks()
 	return true
 end
 
@@ -56,7 +55,7 @@ local function logout(source, sess, req_cmd, msg)
 	local s2c_logout = {
 		code = retcode.SUCCESS,
 	}
-	local resp_f = response(source, pb, sess, req_cmd, "protocol.s2c_logout")
+	local resp_f = msgsender:gen_respf(sess, req_cmd, "protocol.s2c_logout")
 	resp_f(s2c_logout)
 
 	skynet.call(host, "lua", "logout", player_username)
@@ -84,7 +83,7 @@ function CMD.dispatch(source, sess, req_cmd, msg)
 	local f = assert(handleinfo.handler)
 	local args = pb.decode(protoname, msg)
 
-	local resp_f = response(source, pb, sess, req_cmd, resp_protoname)
+	local resp_f = msgsender:gen_respf(sess, req_cmd, resp_protoname)
 	local req = {
 		source = source,
 		session = sess,
@@ -103,6 +102,16 @@ skynet.init( function ()
 		"login/launch.pb",
 		"player/echo.pb",
 		"player/logout.pb",
+		"card/card.pb",
+		"card/card_deck.pb",
+		"card/load_cards.pb",
+		"card/load_card_decks.pb",
+		"card/up_card_level.pb",
+		"card/check_card.pb",
+		"card/change_deck.pb",
+		"card/change_card_deck.pb",
+		"card/update_cards.pb",
+		"card/gm_get_card.pb",
 	}
 	for _,file in ipairs(files) do
 		pb.register_file(skynet.getenv("root") .. "proto/" .. file)

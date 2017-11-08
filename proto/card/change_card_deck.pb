@@ -5,7 +5,7 @@
 
 id (
 pos (
-card_desk_index ("=
+card_deck_index ("=
 c2s_change_card_deck%
 change (2.protocol.change_info"K
 s2c_change_card_deck
