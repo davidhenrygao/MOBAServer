@@ -49,15 +49,46 @@ function M:get_decks()
 	return self.decks
 end
 
+function M:check_deck_index(index)
+	if index <= 0 or index > 3  then
+		return false
+	end
+	return true
+end
+
+function M:check_pos(pos)
+	if pos < 1 or pos > 6 then
+		return false
+	end
+	return true
+end
+
 function M:change_cur_deck(index)
-	self.cur_deck_index = index
-	return retcode.SUCCESS
+	if self:check_deck_index(index) then
+		self.cur_deck_index = index
+	end
 end
 
 function M:change_card_deck(index, id, pos)
 	if index == 0 then
 		index = self.cur_deck_index
 	end
+	if self:check_deck_index(index) == false then
+		return retcode.CARD_DECK_INDEX_ILLEGAL
+	end
+	if self:check_pos(pos) == false then
+		return retcode.CARD_DECK_POS_ILLEGAL
+	end
+
+	local deck = self.decks[index]
+	for p,elem in pairs(deck.elems) do
+		if elem.id == id then
+			return retcode.CARD_ALREADY_IN_CARD_DECK
+		end
+	end
+	local e = deck.elems[pos]
+	e.id = id
+
 	local change_info = {
 		id = id,
 		pos = pos,

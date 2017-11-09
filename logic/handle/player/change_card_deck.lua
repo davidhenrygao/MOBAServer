@@ -1,7 +1,10 @@
 local cmd = require "proto.cmd"
+local cfg_data = require "logic.cfg_data"
+local retcode = require "logic.retcode"
 
 local function execute_f(req, resp_f)
 	local player = req.player
+	local card_set = player:get_card_set()
 	local card_deck = player:get_card_deck()
 
 	local c2s_change_card_deck = req.args
@@ -13,6 +16,19 @@ local function execute_f(req, resp_f)
 	local s2c_change_card_deck = {
 		code = 0,
 	}
+
+	local card_cfg_data = cfg_data.card_cfg_data[card_id]
+	if card_cfg_data == nil then
+		s2c_change_card_deck.code = retcode.CARD_ID_NOT_EXIST
+		resp_f(s2c_change_card_deck)
+		return
+	end
+
+	if card_set:is_exist(card_id) == false then
+		s2c_change_card_deck.code = retcode.CARD_IS_NOT_UNLOCK
+		resp_f(s2c_change_card_deck)
+		return
+	end
 
 	s2c_change_card_deck.code, s2c_change_card_deck.change = card_deck:change_card_deck(
 		deck_index, card_id, pos)

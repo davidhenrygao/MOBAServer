@@ -24,9 +24,15 @@ local function execute_f(req, resp_f)
 
 	local flag = card_set:is_exist(card_id)
 	if flag == false then
-		card_set:unlock_card(card_id)
+		card_set:unlock_cards({card_id})
 	end
-	card_set:add_card(card_id, amount)
+	local add_list = {
+		[1] = {
+			id = card_id,
+			amount = amount,
+		},
+	}
+	card_set:add_cards(add_list)
 
 	resp_f(s2c_gm_get_card)
 end

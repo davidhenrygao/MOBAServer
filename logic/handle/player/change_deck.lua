@@ -1,4 +1,5 @@
 local cmd = require "proto.cmd"
+local retcode = require "logic.retcode"
 
 local function execute_f(req, resp_f)
 	local player = req.player
@@ -12,7 +13,11 @@ local function execute_f(req, resp_f)
 		index = index,
 	}
 
-	s2c_change_deck.code = card_deck:change_cur_deck(index)
+	if card_deck:check_deck_index(index) == false then
+		s2c_change_deck.code = retcode.CARD_DECK_INDEX_ILLEGAL
+	else
+		card_deck:change_cur_deck(index)
+	end
 
 	resp_f(s2c_change_deck)
 end

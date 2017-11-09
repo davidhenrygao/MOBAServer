@@ -61,7 +61,6 @@ function M:iterator(begin)
 end
 
 local function update_cards_to_client(card_objs)
-    assert(card_objs and type(card_objs) == "table")
     local s2c_update_cards = {
         cards = {},
     }
@@ -81,7 +80,7 @@ function M:up_card_level(id, up_level, need_amount)
     card_obj:set_amount(amount - need_amount)
     card_obj:set_mod()
 
-    update_cards_to_client(card_obj)
+    update_cards_to_client({card_obj})
 
 	local up_level_info = {
         id = id,
@@ -92,6 +91,13 @@ function M:up_card_level(id, up_level, need_amount)
 end
 
 function M:check_card(id)
+	local card_obj = assert(self.cardsbyid[id])
+	if card_obj:is_new() == false then
+		return retcode.CARD_STATE_IS_NOT_NEW
+	end
+	card_obj:set_checked()
+	card_obj:set_mod()
+	update_cards_to_client({card_obj})
 	return retcode.SUCCESS
 end
 
@@ -99,19 +105,32 @@ function M:is_exist(id)
     return self.cardsbyid[id] ~= nil
 end
 
-function M:unlock_card(id)
-    local card_obj = card:new()
-    card_obj:init_unlock(id)
-    self:insert_obj(card_obj)
-    update_cards_to_client(card_obj)
+function M:unlock_cards(id_list)
+	assert(id_list and type(id_list) == "table")
+	local card_objs = {}
+	for _,id in ipairs(id_list) do
+		assert(id and type(id) == "number")
+		local card_obj = card:new()
+		card_obj:init_unlock(id)
+		self:insert_obj(card_obj)
+		table.insert(card_objs, card_obj)
+	end
+    update_cards_to_client(card_objs)
 end
 
-function M:add_card(id, amount)
-    local card_obj = assert(self.cardsbyid[id])
-    local orig_amount = card_obj:get_amount()
-    card_obj:set_amount(orig_amount + amount)
-    card_obj:set_mod()
-    update_cards_to_client(card_obj)
+function M:add_cards(add_list)
+	assert(add_list and type(add_list) == "table")
+	local card_objs = {}
+	for _,elem in ipairs(add_list) do
+		local id = assert(elem.id)
+		local amount = assert(elem.amount)
+		local card_obj = assert(self.cardsbyid[id])
+		local orig_amount = card_obj:get_amount()
+		card_obj:set_amount(orig_amount + amount)
+		card_obj:set_mod()
+		table.insert(card_objs, card_obj)
+	end
+    update_cards_to_client(card_objs)
 end
 
 return card_set_mgr

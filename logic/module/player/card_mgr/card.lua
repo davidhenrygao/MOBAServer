@@ -65,6 +65,18 @@ function M:get_update_info()
     return update_info
 end
 
+function M:is_unlock()
+	return self.state == CARD_STATE.UNLOCK
+end
+
+function M:is_new()
+	return self.state == CARD_STATE.NEW
+end
+
+function M:is_checked()
+	return self.state == CARD_STATE.CHECKED
+end
+
 function M:is_orig()
 	return self.cstate == CARD_CHANGE_STATE.ORIG
 end
@@ -93,7 +105,7 @@ function M:set_new()
 	self.state = CARD_STATE.NEW
 end
 
-function M:set_check()
+function M:set_checked()
 	self.state = CARD_STATE.CHECKED
 end
 
