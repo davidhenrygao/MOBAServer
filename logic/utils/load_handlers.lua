@@ -3,7 +3,7 @@ local log = require "log"
 local lfs = require "lfs"
 local path_mgr = require "logic.utils.path_mgr"
 
-local logic = "logic"
+local logic = "logic/handle"
 local root = skynet.getenv("root") .. logic .. "/"
 
 local function load_handlers(paths)

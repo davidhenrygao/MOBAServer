@@ -94,6 +94,8 @@ function CMD.force_close_conn(conn)
 end
 
 skynet.init( function ()
+	local cfg_data_loader = skynet.queryservice("cfg_data_loader")
+	skynet.call(cfg_data_loader, "lua", "load")
 end)
 
 skynet.start( function ()

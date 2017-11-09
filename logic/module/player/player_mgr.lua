@@ -2,12 +2,12 @@ local skynet = require "skynet"
 local log = require "log"
 local retcode = require "logic.retcode"
 
-local card_mgr = require "logic.libs.player.card_mgr"
+local card_mgr = require "logic.module.player.card_mgr"
 
 local player_mgr = {}
 local M = {}
 
-function player_mgr:new()
+function player_mgr.new()
 	local object = {}
 	setmetatable(object, { __index = M, })
 	return object
@@ -22,7 +22,7 @@ function M:init(uid)
 	end
 	self.basic_info = player_basic_info
 
-	local card_info = card_mgr:new()
+	local card_info = card_mgr.new()
 	err = card_info:init(uid)
 	if err ~= retcode.SUCCESS then
 		log("Launch player(%d) card info failed!", uid)

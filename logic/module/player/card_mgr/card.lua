@@ -16,7 +16,7 @@ local CARD_CHANGE_STATE = {
 local card = {}
 local M = {}
 
-function card:new()
+function card.new()
 	local object = {}
 	setmetatable(object, { __index = M, })
 	return object
@@ -53,6 +53,16 @@ end
 
 function M:get_state()
 	return self.state
+end
+
+function M:get_update_info()
+    local update_info = {
+        id = self.id,
+        level = self.level,
+        amount = self.level,
+        state = self.state,
+    }
+    return update_info
 end
 
 function M:is_orig()
@@ -96,7 +106,9 @@ function M:set_add()
 end
 
 function M:set_mod()
-	self.cstate = CARD_CHANGE_STATE.MOD
+    if self.cstate ~= CARD_CHANGE_STATE.ADD then
+        self.cstate = CARD_CHANGE_STATE.MOD
+    end
 end
 
 return card

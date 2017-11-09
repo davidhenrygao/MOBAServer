@@ -5,7 +5,7 @@ local retcode = require "logic.retcode"
 local card_deck_mgr = {}
 local M = {}
 
-function card_deck_mgr:new()
+function card_deck_mgr.new()
 	local object = {}
 	setmetatable(object, { __index = M, })
 	return object

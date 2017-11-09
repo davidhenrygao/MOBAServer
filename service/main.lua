@@ -14,6 +14,8 @@ skynet.start(function()
 	local loginserver = skynet.newservice("login_manager")
 	skynet.name(".manager", loginserver)
 
+	skynet.uniqueservice("cfg_data_loader")
+
 	local gateserver = skynet.newservice("gate")
 	skynet.call(gateserver, "lua", "start", {
 		name = "gate1",

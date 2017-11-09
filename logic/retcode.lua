@@ -15,9 +15,16 @@ retcode.CREATE_PLAYER_DB_ERR = 1004
 retcode.ACCOUNT_PLAYER_NOT_EXIST = 1005
 
 -- 10000-19999 are used for agent
+-- 10000-10199 are used for player basic module
 retcode.PLAYER_ID_NOT_EXIT = 10000
 retcode.PLAYER_NOT_LOGIN = 10001
 retcode.CHANGE_PLAYER_NAME_DB_ERR = 10002
-retcode.CREATE_PLAYER_CARD_INFO_DB_ERR = 10003
+
+-- 10200-10399 are used for card module
+retcode.CREATE_PLAYER_CARD_INFO_DB_ERR = 10200
+retcode.CARD_ID_NOT_EXIST = 10201
+retcode.CARD_IS_NOT_UNLOCK = 10202
+retcode.CARD_LV_EXCEED_MAX_LV = 10203
+retcode.CARD_LV_UP_AMOUNT_NOT_ENOUGH = 10204
 
 return retcode

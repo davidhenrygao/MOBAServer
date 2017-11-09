@@ -1,11 +1,11 @@
 local skynet = require "skynet"
 local log = require "log"
 local msgsender = require "msgsender"
-local handle = require "logic.player"
+local handle = require "logic.handle.player"
 local retcode = require "logic.retcode"
 local command = require "proto.cmd"
 local pb = require "protobuf"
-local player_mgr = require "logic.libs.player.player_mgr"
+local player_mgr = require "logic.module.player.player_mgr"
 
 local host = ...
 
@@ -27,7 +27,7 @@ function CMD.launch(dest, username, sess, cmd, uid)
 	local s2c_launch = {
 		code = retcode.SUCCESS,
 	}
-	player = player_mgr:new()
+	player = player_mgr.new()
 	err = player:init(uid)
 	if err ~= retcode.SUCCESS then
 		log("Player(%d) agent launch failed: err(%d)!", uid, err)
