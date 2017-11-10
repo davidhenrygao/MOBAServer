@@ -8,7 +8,7 @@ local protocol = require "protocol"
 local cmd = require "proto.cmd"
 local errcode = require "logic.retcode"
 local redis = require "skynet.db.redis"
-local cjson = require "cjson"
+local utils = require "luautils"
 
 local id = ...
 
@@ -149,7 +149,7 @@ local function dblogin(logininfo)
 			openid = account,
 			unionid = logininfo.unionid,
 		}
-		account_info_str = cjson.encode(account_info)
+		account_info_str = utils.table_to_str(account_info)
 		ret = db:hset(ACCOUNT, account, account_info_str)
 		if ret == 0 then
 			return errcode.REGISTER_DB_ERR
@@ -168,7 +168,7 @@ local function dblogin(logininfo)
 			gold = 0,
 			exp = 0,
 		}
-		player_str = cjson.encode(player)
+		player_str = utils.table_to_str(player)
 		key = PLAYER .. tostring(account_info.uid)
 		ret = db:setnx(key, player_str)
 		if ret == 0 then
@@ -177,7 +177,7 @@ local function dblogin(logininfo)
 	else
 		-- login
 		account_info_str = db:hget(ACCOUNT, account)
-		account_info = cjson.decode(account_info_str)
+		account_info = utils.str_to_table(account_info_str)
 	end
 	return errcode.SUCCESS, account_info.uid
 end

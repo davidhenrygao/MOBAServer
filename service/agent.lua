@@ -1,4 +1,5 @@
 local skynet = require "skynet"
+local sharedata = require "skynet.sharedata"
 local log = require "log"
 local msgsender = require "msgsender"
 local handle = require "logic.handle.player"
@@ -15,8 +16,11 @@ local CMD = {}
 
 local player
 local player_username
+local cfg_data
 
 function CMD.kick()
+	player:save()
+	log("save player when be kicked.")
 	skynet.fork( function ()
 		skynet.exit()
 	end)
@@ -43,10 +47,14 @@ function CMD.launch(dest, username, sess, cmd, uid)
 
 	player_username = username
 
+	cfg_data = sharedata.query("cfg_data")
+
 	return true
 end
 
 function CMD.conn_abort()
+	player:save()
+	log("save player when connection abort.")
 	skynet.call(host, "lua", "conn_abort", player_username)
 	return
 end
@@ -61,7 +69,7 @@ local function logout(source, sess, req_cmd, msg)
 	skynet.call(host, "lua", "logout", player_username)
 
 	player:save()
-	log("save player.")
+	log("save player when logout.")
 
 	skynet.exit()
 end
@@ -89,7 +97,8 @@ function CMD.dispatch(source, sess, req_cmd, msg)
 		session = sess,
 		cmd = req_cmd,
 		args = args,
-		player = player
+		cfg_data = cfg_data,
+		player = player,
 	}
 	f(req, resp_f)
 end

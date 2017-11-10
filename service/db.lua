@@ -2,7 +2,7 @@ local skynet = require "skynet"
 local redis = require "skynet.db.redis"
 local log = require "log"
 local retcode = require "logic.retcode"
-local cjson = require "cjson"
+local utils = require "luautils"
 
 local CMD = {}
 
@@ -58,13 +58,13 @@ local function createplayerdbcardsinfo(playerkey)
 		table.insert(card_decks.decks, card_deck)
 	end
 	local key = CARD .. playerkey
-	local cards_str = cjson.encode(cards)
+	local cards_str = utils.table_to_str(cards)
 	local ret = db:set(key, cards_str)
 	if ret == 0 then
 		return retcode.CREATE_PLAYER_CARD_INFO_DB_ERR
 	end
 	key = CARD_DECK .. playerkey
-	local card_decks_str = cjson.encode(card_decks)
+	local card_decks_str = utils.table_to_str(card_decks)
 	ret = db:set(key, card_decks_str)
 	if ret == 0 then
 		return retcode.CREATE_PLAYER_CARD_INFO_DB_ERR
@@ -79,7 +79,7 @@ function CMD.launch_player_basic_info(uid)
 	    return retcode.ACCOUNT_PLAYER_NOT_EXIST
 	end
 
-	local player_basic_info = cjson.decode(player_str)
+	local player_basic_info = utils.str_to_table(player_str)
 
     return retcode.SUCCESS, player_basic_info
 end
@@ -96,7 +96,7 @@ function CMD.launch_player_cards(uid)
 	end
 	player_cards_str = db:get(CARD .. key)
 
-	local player_cards = cjson.decode(player_cards_str)
+	local player_cards = utils.str_to_table(player_cards_str)
 
     return retcode.SUCCESS, player_cards
 end
@@ -113,9 +113,29 @@ function CMD.launch_player_card_decks(uid)
 	end
 	player_card_decks_str = db:get(CARD_DECK .. key)
 
-	local player_card_decks = cjson.decode(player_card_decks_str)
+	local player_card_decks = utils.str_to_table(player_card_decks_str)
 
     return retcode.SUCCESS, player_card_decks
+end
+
+function CMD.save_player_cards(uid, cards)
+	local cards_str = utils.table_to_str(cards)
+	local key = CARD .. tostring(uid)
+	local ret = db:set(key, cards_str)
+	if ret == 0 then
+		log("save_player_cards failed: ret(%d).", ret)
+	end
+	return retcode.SUCCESS
+end
+
+function CMD.save_player_decks(uid, decks_info)
+	local key = CARD_DECK .. tostring(uid)
+	local card_decks_str = utils.table_to_str(decks_info)
+	local ret = db:set(key, card_decks_str)
+	if ret == 0 then
+		log("save_player_decks failed: ret(%d).", ret)
+	end
+	return retcode.SUCCESS
 end
 
 skynet.init( function ()

@@ -39,8 +39,14 @@ function M:insert_obj(card_obj)
     self.cardsbyid[card_obj:get_id()] = card_obj
 end
 
-function M:save()
-	
+function M:save(id)
+	local db = skynet.queryservice("db")
+	local db_cards = {}
+	for _,card_obj in ipairs(self.cards) do
+		local update_card = card_obj:get_update_info()
+		table.insert(db_cards, update_card)
+	end
+	skynet.call(db, "lua", "save_player_cards", id, db_cards)
 end
 
 function M:size()
@@ -60,6 +66,10 @@ function M:iterator(begin)
 	return f, self.cards, b
 end
 
+function M:get_card(card_id)
+	return self.cardsbyid[card_id]
+end
+
 local function update_cards_to_client(card_objs)
     local s2c_update_cards = {
         cards = {},
@@ -68,7 +78,7 @@ local function update_cards_to_client(card_objs)
         local update_card_info = card_obj:get_update_info()
         table.insert(s2c_update_cards.cards, update_card_info)
     end
-    msgsender:push(cmd.UPDATE_CARDS, "protocol.update_cards", s2c_update_cards)
+    msgsender:push(cmd.UPDATE_CARDS, "protocol.s2c_update_cards", s2c_update_cards)
 end
 
 function M:up_card_level(id, up_level, need_amount)
@@ -126,6 +136,9 @@ function M:add_cards(add_list)
 		local amount = assert(elem.amount)
 		local card_obj = assert(self.cardsbyid[id])
 		local orig_amount = card_obj:get_amount()
+		if card_obj:is_unlock() then
+			card_obj:set_new()
+		end
 		card_obj:set_amount(orig_amount + amount)
 		card_obj:set_mod()
 		table.insert(card_objs, card_obj)

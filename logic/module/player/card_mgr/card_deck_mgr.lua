@@ -37,8 +37,27 @@ function M:init(uid)
 	return retcode.SUCCESS
 end
 
-function M:save()
-	
+function M:save(id)
+	local db = skynet.queryservice("db")
+	local db_decks_info = {
+		cur_deck_index = self.cur_deck_index,
+		decks = {},
+	}
+	for _,deck in pairs(self.decks) do
+		local d = {
+			index = deck.index,
+			elems = {},
+		}
+		for _,elem in pairs(deck.elems) do
+			local e = {
+				id = elem.id,
+				pos = elem.pos,
+			}
+			table.insert(d.elems, e)
+		end
+		table.insert(db_decks_info.decks, d)
+	end
+	skynet.call(db, "lua", "save_player_decks", id, db_decks_info)
 end
 
 function M:get_current_deck_index()

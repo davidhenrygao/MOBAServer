@@ -1,6 +1,5 @@
 local log = require "log"
 local cmd = require "proto.cmd"
-local cfg_data = require "logic.cfg_data"
 local retcode = require "logic.retcode"
 
 
@@ -22,6 +21,7 @@ local function cal_lv_up_relation(card_lv_cfg, card_lv, up_lv)
 end
 
 local function execute_f(req, resp_f)
+	local cfg_data = req.cfg_data
 	local player = req.player
 	local card_set = player:get_card_set()
 
@@ -49,14 +49,15 @@ local function execute_f(req, resp_f)
 
 	local card_lv = card:get_level()
 	local final_lv = card_lv + up_level
-	if final_lv > #(card_cfg_data.prop_) then
+	local lv_prop = card_cfg_data.prop_
+	if final_lv > #lv_prop then
 		s2c_up_card_level.code = retcode.CARD_LV_EXCEED_MAX_LV
 		resp_f(s2c_up_card_level)
 		return
 	end
 
 	local need_gold, need_amount, exp_award = cal_lv_up_relation(
-		card_cfg_data.prop_, card_lv, up_level)
+		lv_prop, card_lv, up_level)
 
 	if need_amount > card:get_amount() then
 		s2c_up_card_level.code = retcode.CARD_LV_UP_AMOUNT_NOT_ENOUGH
@@ -65,7 +66,7 @@ local function execute_f(req, resp_f)
 	end
 
 	-- check player's gold if enough
-	log("need_gold(%d), need_amount(%d), exp_award(%).", 
+	log("need_gold(%d), need_amount(%d), exp_award(%d).", 
 		need_gold, need_amount, exp_award)
 
 	s2c_up_card_level.info = card_set:up_card_level(

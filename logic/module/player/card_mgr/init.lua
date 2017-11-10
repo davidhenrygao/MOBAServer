@@ -46,9 +46,9 @@ function M:init(uid)
 	return retcode.SUCCESS
 end
 
-function M:save()
-	self.card_set:save()
-	self.card_deck:save()
+function M:save(id)
+	self.card_set:save(id)
+	self.card_deck:save(id)
 end
 
 function M:get_card_set()

@@ -1,8 +1,8 @@
 local cmd = require "proto.cmd"
-local cfg_data = require "logic.cfg_data"
 local retcode = require "logic.retcode"
 
 local function execute_f(req, resp_f)
+	local cfg_data = req.cfg_data
 	local player = req.player
 	local card_set = player:get_card_set()
 

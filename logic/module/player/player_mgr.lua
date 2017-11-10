@@ -34,7 +34,8 @@ function M:init(uid)
 end
 
 function M:save()
-	
+	local id = self.basic_info.id
+	self.card_info:save(id)
 end
 
 function M:get_basic_info()

@@ -59,7 +59,7 @@ function M:get_update_info()
     local update_info = {
         id = self.id,
         level = self.level,
-        amount = self.level,
+        amount = self.amount,
         state = self.state,
     }
     return update_info
