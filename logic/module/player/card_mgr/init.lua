@@ -18,6 +18,7 @@ function card_mgr.new()
 end
 
 function card_mgr.init_cfg_data()
+	local data = {}
     local card_cfg_data = utils.copytable(card_data)
     for _,prop in pairs(card_prop_data) do
         local id = prop.CardId
@@ -25,7 +26,16 @@ function card_mgr.init_cfg_data()
         card_cfg_data[id].prop_ = card_cfg_data[id].prop_ or {}
         card_cfg_data[id].prop_[level] = utils.copytable(prop)
     end
-	return card_cfg_data
+	local card_unlock_cfg_data = {}
+	for _,card in pairs(card_cfg_data) do
+		local unlock_lv = card.UnLock
+		card_unlock_cfg_data[unlock_lv] = card_unlock_cfg_data[unlock_lv] or {}
+		table.insert(card_unlock_cfg_data[unlock_lv], card)
+	end
+
+	data.card_cfg_data = card_cfg_data
+	data.card_unlock_cfg_data = card_unlock_cfg_data
+	return data
 end
 
 function M:init(uid)

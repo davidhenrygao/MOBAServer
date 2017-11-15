@@ -15,6 +15,10 @@ local CMD = {
     LOGIN = 103,
     LOGIN_LAUNCH = 104,
 
+-- 200-299 player basic module use
+	UPDATE_PLAYER_PROPERTYS = 200,
+	GM_CHANGE_PLAYER_PROPERTY = 201,
+
 -- 1000-1099 card module use
 	LOAD_CARDS = 1000,
 	LOAD_CARD_DECKS = 1001,

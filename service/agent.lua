@@ -1,6 +1,7 @@
 local skynet = require "skynet"
 local sharedata = require "skynet.sharedata"
 local log = require "log"
+local context = require "context"
 local msgsender = require "msgsender"
 local handle = require "logic.handle.player"
 local retcode = require "logic.retcode"
@@ -16,7 +17,6 @@ local CMD = {}
 
 local player
 local player_username
-local cfg_data
 
 function CMD.kick()
 	player:save()
@@ -47,7 +47,9 @@ function CMD.launch(dest, username, sess, cmd, uid)
 
 	player_username = username
 
-	cfg_data = sharedata.query("cfg_data")
+	local cfg_data = sharedata.query("cfg_data")
+
+	context:init(cfg_data)
 
 	return true
 end
@@ -97,7 +99,6 @@ function CMD.dispatch(source, sess, req_cmd, msg)
 		session = sess,
 		cmd = req_cmd,
 		args = args,
-		cfg_data = cfg_data,
 		player = player,
 	}
 	f(req, resp_f)
@@ -108,9 +109,12 @@ skynet.init( function ()
 
 	-- use lfs to load later.
 	local files = {
+		"common/array_elem.pb",
 		"login/launch.pb",
 		"player/echo.pb",
 		"player/logout.pb",
+		"player/gm_change_player_property.pb",
+		"player/update_player_property.pb",
 		"card/card.pb",
 		"card/card_deck.pb",
 		"card/load_cards.pb",

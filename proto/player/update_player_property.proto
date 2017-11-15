@@ -1,0 +1,12 @@
+import "array_elem.proto";
+
+package protocol;
+
+//卡牌更新推送
+message s2c_update_player_property {
+	message property {
+		required uint32 key = 1;
+		repeated uarray_elem vals = 2;
+	};
+	repeated property props = 1;
+};

@@ -117,13 +117,18 @@ end
 
 function M:unlock_cards(id_list)
 	assert(id_list and type(id_list) == "table")
+	if #id_list == 0 then
+		return
+	end
 	local card_objs = {}
 	for _,id in ipairs(id_list) do
 		assert(id and type(id) == "number")
-		local card_obj = card:new()
-		card_obj:init_unlock(id)
-		self:insert_obj(card_obj)
-		table.insert(card_objs, card_obj)
+		if self:is_exist(id) == false then
+			local card_obj = card:new()
+			card_obj:init_unlock(id)
+			self:insert_obj(card_obj)
+			table.insert(card_objs, card_obj)
+		end
 	end
     update_cards_to_client(card_objs)
 end

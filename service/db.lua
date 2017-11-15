@@ -118,6 +118,16 @@ function CMD.launch_player_card_decks(uid)
     return retcode.SUCCESS, player_card_decks
 end
 
+function CMD.save_player_basic_info(info)
+	local key = PLAYER .. string.format("%d", assert(info.id))
+	local info_str = utils.table_to_str(info)
+	local ret = db:set(key, info_str)
+	if ret  == 0 then
+		log("save_player_basic_info failed: ret(%d).", ret)
+	end
+    return retcode.SUCCESS
+end
+
 function CMD.save_player_cards(uid, cards)
 	local cards_str = utils.table_to_str(cards)
 	local key = CARD .. tostring(uid)

@@ -1,0 +1,11 @@
+package protocol;
+
+message iarray_elem {
+	required int32 value = 1;
+	required uint32 pos = 2;
+};
+
+message uarray_elem {
+	required uint32 value = 1;
+	required uint32 pos = 2;
+};

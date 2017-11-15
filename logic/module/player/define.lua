@@ -1,0 +1,14 @@
+local DEFINE = {}
+
+DEFINE.PROPERTY = {
+	LEVEL = 1,
+	EXP = 2,
+	GOLD = 3,
+}
+
+DEFINE.UPDATE_PROPERTY = {
+	LV_EXP = 1,
+	GOLD = 2,
+}
+
+return DEFINE

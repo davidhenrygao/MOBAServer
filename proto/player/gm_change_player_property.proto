@@ -1,0 +1,19 @@
+import "array_elem.proto";
+
+package protocol;
+
+/*
+    enum OPCODE = {
+		SET_LEVEL = 1,
+		ADD_EXP = 2,
+		MODIFY_GOLD = 3,
+    }
+*/
+message c2s_gm_change_player_property {
+	required uint32 opcode = 1;
+	repeated iarray_elem args = 2;
+};
+
+message s2c_gm_change_player_property {
+    required int32 code = 1;
+};
