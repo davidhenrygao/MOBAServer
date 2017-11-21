@@ -33,6 +33,25 @@ function M:init(uid)
 	return retcode.SUCCESS
 end
 
+function M:create_init_cards(card_list)
+	assert(card_list and type(card_list) == "table")
+	for _,id in ipairs(card_list) do
+		local card_obj = card:new()
+		card_obj:init_unlock(id)
+		self:insert_obj(card_obj)
+	end
+	local CREATE_GET_NUMS = 6
+	if #card_list < CREATE_GET_NUMS then
+		CREATE_GET_NUMS = #card_list
+	end
+	for i=1,CREATE_GET_NUMS do
+		local card_obj = self:get_card(card_list[i])
+		card_obj:set_amount(1)
+		card_obj:set_checked()
+		card_obj:set_mod()
+	end
+end
+
 function M:insert_obj(card_obj)
     assert(card_obj)
     table.insert(self.cards, card_obj)

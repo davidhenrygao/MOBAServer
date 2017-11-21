@@ -27,6 +27,9 @@ function CMD.kick()
 end
 
 function CMD.launch(dest, username, sess, cmd, uid)
+	local cfg_data = sharedata.query("cfg_data")
+	context:init(cfg_data)
+
 	local err
 	local s2c_launch = {
 		code = retcode.SUCCESS,
@@ -46,10 +49,6 @@ function CMD.launch(dest, username, sess, cmd, uid)
 	resp_f(s2c_launch)
 
 	player_username = username
-
-	local cfg_data = sharedata.query("cfg_data")
-
-	context:init(cfg_data)
 
 	return true
 end

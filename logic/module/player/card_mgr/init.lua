@@ -1,6 +1,7 @@
 local log = require "log"
 local utils = require "luautils"
 local retcode = require "logic.retcode"
+local context = require "context"
 
 local card_set_mgr = require "logic.module.player.card_mgr.card_set_mgr"
 local card_deck_mgr = require "logic.module.player.card_mgr.card_deck_mgr"
@@ -50,6 +51,18 @@ function M:init(uid)
 	if err ~= retcode.SUCCESS then
 		log("Player(%d) card deck init failed: err(%d)!", uid, err)
 		return err
+	end
+	if card_set:size() == 0 then
+		local cfg_data = context:get_cfg_data()
+		local card_unlock_cfg_data = cfg_data.card_unlock_cfg_data
+		local lv_unlock_cards_data = card_unlock_cfg_data[1] or {}
+		local card_list = {}
+		for _,data in ipairs(lv_unlock_cards_data) do
+			table.insert(card_list, data.Id)
+		end
+		table.sort(card_list)
+		card_set:create_init_cards(card_list)
+		card_deck:create_init_decks(card_list)
 	end
 	self.card_set = card_set
 	self.card_deck = card_deck

@@ -37,6 +37,26 @@ function M:init(uid)
 	return retcode.SUCCESS
 end
 
+function M:create_init_decks(card_list)
+	assert(card_list and type(card_list) == "table")
+	for i=1,3 do
+		self.decks[i] = {
+			index = i,
+			elems = {},
+		}
+		for idx,id in ipairs(card_list) do
+			if idx > 6 then
+				break
+			end
+			local e = {
+				id = id,
+				pos = idx,
+			}
+			self.decks[i].elems[idx] = e
+		end
+	end
+end
+
 function M:save(id)
 	local db = skynet.queryservice("db")
 	local db_decks_info = {

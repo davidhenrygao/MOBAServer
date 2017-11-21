@@ -11,6 +11,7 @@ local PLAYER = "player:"
 local CARD = "card:"
 local CARD_DECK = "card_deck:"
 
+--[[
 local function createplayerdbcardsinfo(playerkey)
 	local open_card_set = { 1001, 2001, 3001, 4001, 1002, 2002, 3002, 4002 }
 	local unlock_card_set = { 1003, 2003, 3003, 4003 }
@@ -71,6 +72,7 @@ local function createplayerdbcardsinfo(playerkey)
 	end
 	return retcode.SUCCESS
 end
+--]]
 
 function CMD.launch_player_basic_info(uid)
 	local key = PLAYER .. string.format("%d", uid)
@@ -85,16 +87,18 @@ function CMD.launch_player_basic_info(uid)
 end
 
 function CMD.launch_player_cards(uid)
-	local ret
 	local key = string.format("%d", uid)
 	local player_cards_str = db:get(CARD .. key)
+	--[[
 	if player_cards_str == nil then
-		ret = createplayerdbcardsinfo(key)
+		local ret = createplayerdbcardsinfo(key)
 		if ret ~= retcode.SUCCESS then
 			return ret
 		end
 	end
 	player_cards_str = db:get(CARD .. key)
+	--]]
+	player_cards_str = player_cards_str or "{}"
 
 	local player_cards = utils.str_to_table(player_cards_str)
 
@@ -102,16 +106,19 @@ function CMD.launch_player_cards(uid)
 end
 
 function CMD.launch_player_card_decks(uid)
-	local ret
 	local key = string.format("%d", uid)
 	local player_card_decks_str = db:get(CARD_DECK .. key)
+	--[[
 	if player_card_decks_str == nil then
-		ret = createplayerdbcardsinfo(key)
+		local ret = createplayerdbcardsinfo(key)
 		if ret ~= retcode.SUCCESS then
 			return ret
 		end
 	end
 	player_card_decks_str = db:get(CARD_DECK .. key)
+	--]]
+	player_card_decks_str = player_card_decks_str 
+		or "{[\"cur_deck_index\"]=1,[\"decks\"]={},}"
 
 	local player_card_decks = utils.str_to_table(player_card_decks_str)
 
