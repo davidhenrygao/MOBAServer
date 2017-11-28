@@ -1,0 +1,6 @@
+package protocol;
+
+//玩家被踢下线推送
+message s2c_kick_out_player {
+	required uint32 code = 1;
+};

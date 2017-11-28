@@ -18,6 +18,7 @@ local CMD = {
 -- 200-299 player basic module use
 	UPDATE_PLAYER_PROPERTYS = 200,
 	GM_CHANGE_PLAYER_PROPERTY = 201,
+	KICK_OUT_PLAYER = 203,
 
 -- 1000-1099 card module use
 	LOAD_CARDS = 1000,

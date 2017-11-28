@@ -3,6 +3,8 @@ local log = require "log"
 local crypt = require "skynet.crypt"
 local pb = require "protobuf"
 local cmd = require "proto.cmd"
+local proto = require "protocol"
+local retcode = require "logic.retcode"
 
 local protostr = "protocol.c2s_launch"
 
@@ -69,7 +71,33 @@ local function verify_signature(username, index, hmac)
 	return true
 end
 
+local function send_message(source, sess, command, resp_proto_str, data)
+	local result, err = pb.encode(resp_proto_str, data)
+	if err ~= nil then
+		log("Launch server protobuf encode cmd[%d] error(%s).", command, err)
+		return false
+	end
+	local r = proto.serialize(sess, command, result)
+	if not r then
+		log("Launch server protocol serialization error!")
+		return false
+	end
+	skynet.send(source, "lua", "response", sess, r)
+	return true
+end
+
 function CMD.dispatch(source, sess, req_cmd, msg)
+	if req_cmd == cmd.HEARTBEAT then
+		local s2c_heartbeat = {
+			cur_timestamp = skynet.time(),
+		}
+		local ret = send_message(source, sess, req_cmd, 
+			"protocol.s2c_heartbeat", s2c_heartbeat) 
+		if ret == false then
+			return false
+		end
+		return
+	end
 	if req_cmd ~= cmd.LOGIN_LAUNCH then
 		log("Launch server get unexpected cmd[%d].", req_cmd)
 		close_conn(source)
@@ -119,6 +147,7 @@ function CMD.conn_abort(username)
 		local u = login_player[username]
 		if u ~= nil then
 			u.launch = nil
+			u.conn = nil
 		end
 	end
 	return
@@ -130,6 +159,11 @@ function CMD.kick(username)
 		return
 	end
 	if login_info.conn ~= nil then
+		local s2c_kick_out_player = {
+			code = retcode.USER_RELOGIN_IN_OTHER_PLACE,
+		}
+		send_message(login_info.conn, 0, cmd.KICK_OUT_PLAYER, 
+			"protocol.s2c_kick_out_player", s2c_kick_out_player)
 		close_conn(login_info.conn)
 	end
 	if login_info.agent ~= nil then
@@ -151,7 +185,11 @@ function CMD.logout(username)
 end
 
 skynet.init( function ()
-	local file = skynet.getenv("root") .. "proto/login/launch.pb"
+	local file = skynet.getenv("root") .. "proto/common/heartbeat.pb"
+	pb.register_file(file)
+	file = skynet.getenv("root") .. "proto/login/launch.pb"
+	pb.register_file(file)
+	file = skynet.getenv("root") .. "proto/player/kick_out_player.pb"
 	pb.register_file(file)
 end)
 

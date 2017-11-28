@@ -109,6 +109,7 @@ skynet.init( function ()
 	-- use lfs to load later.
 	local files = {
 		"common/array_elem.pb",
+		"common/heartbeat.pb",
 		"login/launch.pb",
 		"player/echo.pb",
 		"player/logout.pb",

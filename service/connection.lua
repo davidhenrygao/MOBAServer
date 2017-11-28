@@ -85,10 +85,19 @@ function CMD.selfcheck()
     end
 end
 
+local function strtohex(str)
+	local len = str:len()
+	local fmt = "0X"
+	for i=1,len do
+		fmt = fmt .. string.format("%02x", str:byte(i))
+	end
+	return fmt
+end
+
 function CMD.response(sess, resp)
     assert(type(resp) == "string", 
-        "CMD.response got resp is not json string!")
-    log("session[%d] response json string[%s].", sess, resp)
+        "CMD.response got resp is not string!")
+    log("session[%d] response string[%s].", sess, strtohex(resp))
     netpackage.write(data.fd, resp)
 end
 

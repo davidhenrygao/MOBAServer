@@ -1,0 +1,9 @@
+package protocol;
+
+message c2s_heartbeat {
+    optional string placeholder = 1;
+};
+
+message s2c_heartbeat {
+    required uint64 cur_timestamp = 1;
+};

@@ -18,6 +18,25 @@ local PLAYER = "player:"
 
 local Context = {}
 
+--[[
+local function strtohex(str)
+	local len = str:len()
+	local fmt = "0X"
+	for i=1,len do
+		fmt = fmt .. string.format("%02x", str:byte(i))
+	end
+	return fmt
+end
+--]]
+
+local function write_cmd_msg(fd, proto_cmd, protostr, orgdata)
+	local data = pb.encode(protostr, orgdata)
+	--log("write_cmd_msg cmd(%d) encode result: %s", proto_cmd, strtohex(data))
+	local msg = protocol.serialize(Context[fd].session, proto_cmd, data)
+	--log("write_cmd_msg cmd(%d) serialize msg result: %s", proto_cmd, strtohex(msg))
+	net.write(fd, msg)
+end
+
 local function read_cmd_msg(fd, expect_cmd, protostr)
 	local sess
 	local req_cmd
@@ -26,17 +45,28 @@ local function read_cmd_msg(fd, expect_cmd, protostr)
 	local msg
 	local result
 	local err
-	ok, msg = net.read(fd)
-	if not ok then
-		log("cmd[%d] netpackage read failed: connection[%d] aborted.", 
-			expect_cmd, fd)
-		return false
-	end
-	ok, sess, req_cmd, data = protocol.unserialize(msg)
-	if not ok then
-		log("cmd[%d] Connection[%d] protocol unserialize error.", 
-			expect_cmd, fd)
-		return false
+	while true do
+		ok, msg = net.read(fd)
+		if not ok then
+			log("cmd[%d] netpackage read failed: connection[%d] aborted.", 
+				expect_cmd, fd)
+			return false
+		end
+		ok, sess, req_cmd, data = protocol.unserialize(msg)
+		if not ok then
+			log("cmd[%d] Connection[%d] protocol unserialize error.", 
+				expect_cmd, fd)
+			return false
+		end
+		if req_cmd == cmd.HEARTBEAT then
+			Context[fd].session = sess
+			local s2c_heartbeat = {
+				cur_timestamp = skynet.time(),
+			}
+			write_cmd_msg(fd, cmd.HEARTBEAT, "protocol.s2c_heartbeat", s2c_heartbeat)
+		else
+			break
+		end
 	end
 	if req_cmd ~= expect_cmd then
 		log("Expect cmd[%d], get cmd[%d].", expect_cmd, req_cmd)
@@ -51,23 +81,6 @@ local function read_cmd_msg(fd, expect_cmd, protostr)
 	Context[fd].time = skynet.time()
 	Context[fd].cmd = req_cmd
 	return true, result
-end
-
-----[[
-local function strtohex(str)
-	local len = str:len()
-	local fmt = "0X"
-	for i=1,len do
-		fmt = fmt .. string.format("%02x", str:byte(i))
-	end
-	return fmt
-end
---]]
-
-local function write_cmd_msg(fd, proto_cmd, protostr, orgdata)
-	local data = pb.encode(protostr, orgdata)
-	local msg = protocol.serialize(Context[fd].session, proto_cmd, data)
-	net.write(fd, msg)
 end
 
 local function handshake(fd)
@@ -272,6 +285,7 @@ end
 
 skynet.init( function ()
 	local load_file = {
+		"common/heartbeat.pb",
 		"login/challenge.pb",
 		"login/exchangekey.pb",
 		"login/handshake.pb",
