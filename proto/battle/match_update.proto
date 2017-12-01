@@ -1,0 +1,6 @@
+package protocol;
+
+message s2c_match_update {
+	required uint32 cur_amount = 1;    //已加入人数
+	required uint32 need_amount = 2;    //匹配总人数
+};

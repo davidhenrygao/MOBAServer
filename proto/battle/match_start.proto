@@ -1,0 +1,15 @@
+package protocol;
+
+message c2s_match_start {
+	/*
+	   战斗类型：
+	   竞技场1v1 : 1
+	   竞技场3v3 : 2
+	   ...
+	*/
+    required uint32 type = 1;
+};
+
+message s2c_match_start {
+    required int32 code = 1;    //返回码，0表示成功
+};

@@ -9,6 +9,9 @@ local command = require "proto.cmd"
 local pb = require "protobuf"
 local player_mgr = require "logic.module.player.player_mgr"
 
+local define = require "logic.module.player.define"
+local player_state_define = define.PLAYER_STATE
+
 local host = ...
 
 -- local db
@@ -34,13 +37,16 @@ function CMD.launch(dest, username, sess, cmd, uid)
 	local s2c_launch = {
 		code = retcode.SUCCESS,
 	}
-	player = player_mgr.new()
-	err = player:init(uid)
-	if err ~= retcode.SUCCESS then
-		log("Player(%d) agent launch failed: err(%d)!", uid, err)
-		s2c_launch.code = err
-		return false
+	if player == nil then
+		player = player_mgr.new()
+		err = player:init(uid)
+		if err ~= retcode.SUCCESS then
+			log("Player(%d) agent launch failed: err(%d)!", uid, err)
+			s2c_launch.code = err
+			return false
+		end
 	end
+	player:set_player_state(player_state_define.NORMAL)
 
 	msgsender:set_dest(dest)
 	msgsender:set_pb(pb)
@@ -56,6 +62,7 @@ end
 function CMD.conn_abort()
 	player:save()
 	log("save player when connection abort.")
+	player:set_player_state(player_state_define.UNLAUNCH)
 	skynet.call(host, "lua", "conn_abort", player_username)
 	return
 end

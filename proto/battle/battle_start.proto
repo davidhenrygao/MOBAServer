@@ -1,0 +1,5 @@
+package protocol;
+
+message s2c_battle_start {
+	optional uint32 placeholder = 1;
+};

@@ -2,6 +2,8 @@ local skynet = require "skynet"
 local log = require "log"
 local retcode = require "logic.retcode"
 
+local define = require "logic.module.player.define"
+
 local card_deck_mgr = {}
 local M = {}
 
@@ -45,7 +47,7 @@ function M:create_init_decks(card_list)
 			elems = {},
 		}
 		for idx,id in ipairs(card_list) do
-			if idx > 6 then
+			if idx > define.CARD_DECK_SIZE then
 				break
 			end
 			local e = {
@@ -88,6 +90,10 @@ function M:get_decks()
 	return self.decks
 end
 
+function M:get_cur_deck()
+	return self.decks[self.cur_deck_index]
+end
+
 function M:check_deck_index(index)
 	if index <= 0 or index > 3  then
 		return false
@@ -96,7 +102,7 @@ function M:check_deck_index(index)
 end
 
 function M:check_pos(pos)
-	if pos < 1 or pos > 6 then
+	if pos < 1 or pos > define.CARD_DECK_SIZE then
 		return false
 	end
 	return true

@@ -7,9 +7,11 @@ local context = require "context"
 local utils = require "luautils"
 
 local card_mgr = require "logic.module.player.card_mgr"
+local battle_mgr = require "logic.module.player.battle_mgr"
 local define = require "logic.module.player.define"
 local property_define = define.PROPERTY
 local update_property_define = define.UPDATE_PROPERTY
+local player_state_define = define.PLAYER_STATE
 
 local account_lv_data = require "data.lua.AccountLVL"
 
@@ -37,6 +39,7 @@ function M:init(uid)
 		return err
 	end
 	self.basic_info = player_basic_info
+	self.state = player_state_define.UNLAUNCH
 
 	local card_info = card_mgr.new()
 	err = card_info:init(uid)
@@ -45,6 +48,9 @@ function M:init(uid)
 		return err
 	end
 	self.card_info = card_info
+
+	self.battle_info = battle_mgr.new()
+	self.battle_info:init()
 
 	return retcode.SUCCESS
 end
@@ -68,6 +74,10 @@ function M:get_card_deck()
 	return self.card_info:get_card_deck()
 end
 
+function M:get_cur_card_deck_info()
+	return self.card_info:get_cur_card_deck_info()
+end
+
 function M:is_exist(id)
 	if self.cardsbyid[id] ~= nil then
 		return true
@@ -77,6 +87,27 @@ end
 
 function M:get_gold()
 	return self.basic_info.gold
+end
+
+function M:get_id()
+	return self.basic_info.id
+end
+
+function M:get_level()
+	return self.basic_info.level
+end
+
+function M:get_player_state()
+	return self.state
+end
+
+function M:set_player_state(state)
+	assert(state)
+	self.state = state
+end
+
+function M:get_player_battle_info()
+	return self.basic_info
 end
 
 function M:modify_props(props)

@@ -5,6 +5,7 @@ retcode.SUCCESS = 0
 retcode.INTERNAL = 1
 retcode.UNKNOWN_CMD = 2
 retcode.PROTO_UNSERIALIZATION_FAILED = 3
+retcode.PLAYER_STATE_ILLEGAL = 4
 
 -- 1000-9999 are used for login
 retcode.LOGIN_CLIENT_KEY_LEN_ILLEGAL = 1000
@@ -36,5 +37,8 @@ retcode.CARD_DECK_POS_ILLEGAL = 10207
 retcode.CARD_ALREADY_IN_CARD_DECK = 10208
 retcode.CARD_IS_UNLOCK_STATE = 10209
 retcode.CARD_LV_UP_GOLD_NOT_ENOUGH = 10210
+
+-- 10400-10599 are used for battle module
+retcode.MATCH_TYPE_ERR = 10400
 
 return retcode

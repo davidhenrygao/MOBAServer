@@ -20,6 +20,12 @@ skynet.start(function()
 	skynet.call(gateserver, "lua", "start", {
 		name = "gate1",
 	})
+
+	local matchserver = skynet.newservice("match_server")
+	skynet.name(".matchserver", matchserver)
+
+	local battleserver = skynet.newservice("battle_server")
+	skynet.name(".battleserver", battleserver)
 	
 	skynet.exit()
 end)

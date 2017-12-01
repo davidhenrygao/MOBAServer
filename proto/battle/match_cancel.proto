@@ -1,0 +1,9 @@
+package protocol;
+
+message c2s_match_cancel {
+	optional int32 placeholder = 1;    //占位符，不填
+};
+
+message s2c_match_cancel {
+    required int32 code = 1;    //返回码，0表示成功
+};

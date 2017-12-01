@@ -1,0 +1,9 @@
+package protocol;
+
+message c2s_battle_ready {
+	optional uint32 placeholder = 1;
+};
+
+message s2c_battle_ready {
+	required uint32 code = 1;
+};

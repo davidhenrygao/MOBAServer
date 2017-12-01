@@ -1,0 +1,9 @@
+package protocol;
+
+message c2s_battle_end {
+	required uint32 result = 1;    //战斗结果（0：胜利；1：失败；2：平手）
+};
+
+message s2c_battle_end {
+	required uint32 code = 1;
+};

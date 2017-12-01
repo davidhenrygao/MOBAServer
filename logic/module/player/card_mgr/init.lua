@@ -82,4 +82,22 @@ function M:get_card_deck()
 	return self.card_deck
 end
 
+function M:get_cur_card_deck_info()
+	local cur_card_deck_info = {}
+	local cur_deck = self.get_cur_deck()
+	assert(cur_deck)
+	for _,elem in pairs(cur_deck.elems) do
+		local card_id = elem.id
+		local pos = elem.pos
+		local card = self.card_set:get_card(card_id)
+		local info = {
+			id = card_id,
+			level = card:get_level(),
+			pos = pos,
+		}
+		table.insert(cur_card_deck_info, info)
+	end
+	return cur_card_deck_info
+end
+
 return card_mgr
