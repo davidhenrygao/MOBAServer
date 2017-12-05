@@ -7,7 +7,7 @@ message s2c_battle_frame_update {
 		required uint64 player_id = 1;
 		
 		message action {
-			required string class_id = 1;
+			required uint32 class_id = 1;
 			required string action = 2;
 		}
 		repeated action actions = 2;

@@ -22,6 +22,7 @@ local player
 local player_username
 
 function CMD.kick()
+	player:clean_battle_info()
 	player:save()
 	log("save player when be kicked.")
 	skynet.fork( function ()
@@ -60,6 +61,7 @@ function CMD.launch(dest, username, sess, cmd, uid)
 end
 
 function CMD.conn_abort()
+	player:clean_battle_info()
 	player:save()
 	log("save player when connection abort.")
 	player:set_player_state(player_state_define.UNLAUNCH)
@@ -76,6 +78,7 @@ local function logout(source, sess, req_cmd, msg)
 
 	skynet.call(host, "lua", "logout", player_username)
 
+	player:clean_battle_info()
 	player:save()
 	log("save player when logout.")
 
@@ -110,6 +113,37 @@ function CMD.dispatch(source, sess, req_cmd, msg)
 	f(req, resp_f)
 end
 
+function CMD.match_update(s2c_match_update)
+	msgsender:push(command.MATCH_UPDATE, "protocol.s2c_match_update", 
+		s2c_match_update)
+end
+
+function CMD.battle_init(s2c_battle_init, battle_server_addr)
+	local battle_info = player:get_player_battle_info()
+	battle_info:set_in_battle(s2c_battle_init.battle_id, battle_server_addr)
+	local matchserver = skynet.localname(".matchserver")
+	skynet.call(matchserver, "lua", "finish_match", player:get_id())
+	msgsender:push(command.BATTLE_INIT, "protocol.s2c_battle_init", 
+		s2c_battle_init)
+end
+
+function CMD.battle_start()
+	local s2c_battle_start = {}
+	msgsender:push(command.BATTLE_START, "protocol.s2c_battle_start", 
+		s2c_battle_start)
+end
+
+function CMD.battle_frame_update(s2c_battle_frame_update)
+	msgsender:push(command.BATTLE_FRAME_UPDATE, 
+		"protocol.s2c_battle_frame_update", s2c_battle_frame_update)
+end
+
+function CMD.battle_end(result)
+	local battle_info = player:get_player_battle_info()
+	battle_info:set_free()
+	player:set_player_state(player_state_define.NORMAL)
+end
+
 skynet.init( function ()
 	-- db = skynet.queryservice("db")
 
@@ -132,6 +166,15 @@ skynet.init( function ()
 		"card/change_card_deck.pb",
 		"card/update_cards.pb",
 		"card/gm_get_card.pb",
+		"battle/match_start.pb",
+		"battle/match_cancel.pb",
+		"battle/match_update.pb",
+		"battle/battle_init.pb",
+		"battle/battle_ready.pb",
+		"battle/battle_start.pb",
+		"battle/battle_end.pb",
+		"battle/battle_frame_update.pb",
+		"battle/battle_action.pb",
 	}
 	for _,file in ipairs(files) do
 		pb.register_file(skynet.getenv("root") .. "proto/" .. file)

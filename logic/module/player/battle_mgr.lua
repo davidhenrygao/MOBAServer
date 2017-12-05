@@ -21,22 +21,32 @@ function M:is_matching()
 	return (self.state == player_battle_state_define.MATCHING)
 end
 
-function M:is_in_battle(battle_id)
+function M:is_in_battle()
 	return (self.state == player_battle_state_define.FIGHTING)
 end
 
 function M:set_free()
 	self.state = player_battle_state_define.FREE
 	self.battle_id = nil
+	self.battle_server_addr = nil
 end
 
 function M:set_matching()
 	self.state = player_battle_state_define.MATCHING
 end
 
-function M:set_in_battle(battle_id)
+function M:set_in_battle(battle_id, battle_server_addr)
 	self.state = player_battle_state_define.FIGHTING
-	self.battle_id = battle_id
+	self.battle_id = assert(battle_id)
+	self.battle_server_addr = assert(battle_server_addr)
+end
+
+function M:get_battle_id()
+	return assert(self.battle_id)
+end
+
+function M:get_battle_server_addr()
+	return assert(self.battle_server_addr)
 end
 
 return battle_mgr

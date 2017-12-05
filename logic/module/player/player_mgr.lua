@@ -107,7 +107,7 @@ function M:set_player_state(state)
 end
 
 function M:get_player_battle_info()
-	return self.basic_info
+	return self.battle_info
 end
 
 function M:modify_props(props)
@@ -238,6 +238,22 @@ function M:modify_gold(op, gold)
 	end
 	self.basic_info.gold = cur_gold
 	return gen_update_prop(update_property_define.GOLD, cur_gold)
+end
+
+function M:clean_battle_info()
+	if self.state == player_state_define.BATTLE then
+		if self.battle_info:is_matching() then
+			local matchserver = skynet.localname(".matchserver")
+			skynet.send(matchserver, "lua", "cancel_match_force", 
+				self:get_id())
+		elseif self.battle_info:is_in_battle() then
+			local battleserver = skynet.localname(".battleserver")
+			skynet.send(battleserver, "lua", "battle_end", 
+				self.battle_info:get_battle_id(), self:get_id(), 3)
+		end
+		self.battle_info:set_free()
+	end
+	self.state = player_state_define.NORMAL
 end
 
 return player_mgr

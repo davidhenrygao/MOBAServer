@@ -1,5 +1,6 @@
 local skynet = require "skynet"
 local log = require "log"
+local retcode = require "logic.retcode"
 
 local define = require "logic.module.player.define"
 local match_state_define = define.MATCH_STATE
@@ -33,15 +34,14 @@ local function do_match()
 		end
 		local battleserver = skynet.localname(".battleserver")
 		skynet.call(battleserver, "lua", "create_battle", battle_players)
-		for _,battle_player in ipairs(battle_players) do
-			local id = battle_player.info.id
-			match_players[id] = nil
-		end
 	end
 end
 
 function CMD.start_match(player_match_info, agent_addr)
 	local player_id = player_match_info.id
+	if match_players[player_id] ~= nil then
+		return false, retcode.PLAYER_ALREADY_IN_MATCHING
+	end
 	match_players[player_id] = {
 		addr = agent_addr,
 		state = match_state_define.MATCHING,
@@ -49,6 +49,43 @@ function CMD.start_match(player_match_info, agent_addr)
 	}
 	table.insert(matching_player_list, player_id)
 	skynet.fork(do_match)
+	return true
+end
+
+function CMD.cancel_match(player_id)
+	if match_players[player_id] == nil then
+		return false, retcode.PLAYER_NOT_IN_MATCHING
+	end
+	if match_players[player_id].state ~= match_state_define.MATCHING then
+		return false, retcode.PLAYER_ALREADY_MATCH_SUCCESS
+	end
+	for idx,id in ipairs(matching_player_list) do
+		if id == player_id then
+			table.remove(matching_player_list, idx)
+			match_players[id] = nil
+			break
+		end
+	end
+	return true
+end
+
+function CMD.cancel_match_force(player_id)
+	if match_players[player_id] == nil then
+		return
+	end
+	if match_players[player_id].state == match_state_define.MATCHING then
+		for idx,id in ipairs(matching_player_list) do
+			if id == player_id then
+				table.remove(matching_player_list, idx)
+			end
+		end
+	end
+	match_players[player_id] = nil
+	return
+end
+
+function CMD.finish_match(player_id)
+	match_players[player_id] = nil
 end
 
 skynet.start( function ()

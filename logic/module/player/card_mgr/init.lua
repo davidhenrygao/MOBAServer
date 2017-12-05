@@ -84,7 +84,7 @@ end
 
 function M:get_cur_card_deck_info()
 	local cur_card_deck_info = {}
-	local cur_deck = self.get_cur_deck()
+	local cur_deck = self.card_deck:get_cur_deck()
 	assert(cur_deck)
 	for _,elem in pairs(cur_deck.elems) do
 		local card_id = elem.id

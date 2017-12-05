@@ -1,4 +1,4 @@
-local skynet = "skynet"
+local skynet = require "skynet"
 local log = require "log"
 local cmd = require "proto.cmd"
 local retcode = require "logic.retcode"
@@ -47,8 +47,14 @@ local function execute_f(req, resp_f)
 	}
 
 	local matchserver = skynet.localname(".matchserver")
-	skynet.call(matchserver, "lua", "start_match", 
+	local ret, err = skynet.call(matchserver, "lua", "start_match", 
 		player_match_info, skynet.self())
+	if ret ~= true then
+		battle_info:set_free()
+		s2c_match_start.code = err
+		resp_f(s2c_match_start)
+		return
+	end
 
 	player:set_player_state(player_state_define.BATTLE)
 

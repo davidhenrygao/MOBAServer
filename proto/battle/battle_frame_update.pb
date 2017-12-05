@@ -8,5 +8,5 @@
 	player_id (G
 actions (26.protocol.s2c_battle_frame_update.battle_action.action*
 action
-class_id (	
+class_id (
 action (	
