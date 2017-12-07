@@ -6,11 +6,11 @@ message s2c_battle_frame_update {
 	message battle_action {
 		required uint64 player_id = 1;
 		
-		message action {
+		message action_st {
 			required uint32 class_id = 1;
 			required string action = 2;
 		}
-		repeated action actions = 2;
+		repeated action_st actions = 2;
 	}
 	repeated battle_action battle_actions = 2;    //参战玩家行为数据
 };
