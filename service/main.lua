@@ -21,11 +21,13 @@ skynet.start(function()
 		name = "gate1",
 	})
 
+	local battlegate = skynet.newservice("battle_gate")
+	skynet.call(battlegate, "lua", "start", {
+		port = 10088,
+	})
+	
 	local matchserver = skynet.newservice("match_server")
 	skynet.name(".matchserver", matchserver)
 
-	local battleserver = skynet.newservice("battle_server")
-	skynet.name(".battleserver", battleserver)
-	
 	skynet.exit()
 end)

@@ -1,11 +1,12 @@
 
-–
-battle_init.protoprotocol"ö
+«
+battle_init.protoprotocol"‹
 s2c_battle_init
 	battle_id (
 random (
-team_amount (B
-players_info (2,.protocol.s2c_battle_init.battle_player_infoæ
+server_addr (	
+team_amount (B
+players_info (2,.protocol.s2c_battle_init.battle_player_infoæ
 battle_player_info
 	player_id (
 player_level (

@@ -1,7 +1,8 @@
 package protocol;
 
 message c2s_battle_ready {
-	optional uint32 placeholder = 1;
+	required uint32 battle_id = 1;    //战斗ID
+	required uint64 player_id = 2;
 };
 
 message s2c_battle_ready {

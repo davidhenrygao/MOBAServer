@@ -3,7 +3,8 @@ package protocol;
 message s2c_battle_init {
 	required uint32 battle_id = 1;    //战斗ID
 	required uint32 random = 2;    //随机数
-	required uint32 team_amount = 3;    //队伍人数
+	required string server_addr = 3;    //"ip:port"
+	required uint32 team_amount = 4;    //队伍人数
 
 	message battle_player_info {
 		required uint64 player_id = 1;
@@ -19,5 +20,5 @@ message s2c_battle_init {
 		repeated battle_card_info random_cards_info = 4;    //随机牌阵列表
 	};
 
-	repeated battle_player_info players_info = 4;    //匹配玩家信息
+	repeated battle_player_info players_info = 5;    //匹配玩家信息
 };

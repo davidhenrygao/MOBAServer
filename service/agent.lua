@@ -118,24 +118,13 @@ function CMD.match_update(s2c_match_update)
 		s2c_match_update)
 end
 
-function CMD.battle_init(s2c_battle_init, battle_server_addr)
+function CMD.battle_init(s2c_battle_init)
 	local battle_info = player:get_player_battle_info()
-	battle_info:set_in_battle(s2c_battle_init.battle_id, battle_server_addr)
+	battle_info:set_in_battle(s2c_battle_init.battle_id)
 	local matchserver = skynet.localname(".matchserver")
 	skynet.call(matchserver, "lua", "finish_match", player:get_id())
 	msgsender:push(command.BATTLE_INIT, "protocol.s2c_battle_init", 
 		s2c_battle_init)
-end
-
-function CMD.battle_start()
-	local s2c_battle_start = {}
-	msgsender:push(command.BATTLE_START, "protocol.s2c_battle_start", 
-		s2c_battle_start)
-end
-
-function CMD.battle_frame_update(s2c_battle_frame_update)
-	msgsender:push(command.BATTLE_FRAME_UPDATE, 
-		"protocol.s2c_battle_frame_update", s2c_battle_frame_update)
 end
 
 function CMD.battle_end(result)
@@ -170,11 +159,6 @@ skynet.init( function ()
 		"battle/match_cancel.pb",
 		"battle/match_update.pb",
 		"battle/battle_init.pb",
-		"battle/battle_ready.pb",
-		"battle/battle_start.pb",
-		"battle/battle_end.pb",
-		"battle/battle_frame_update.pb",
-		"battle/battle_action.pb",
 	}
 	for _,file in ipairs(files) do
 		pb.register_file(skynet.getenv("root") .. "proto/" .. file)

@@ -246,10 +246,6 @@ function M:clean_battle_info()
 			local matchserver = skynet.localname(".matchserver")
 			skynet.send(matchserver, "lua", "cancel_match_force", 
 				self:get_id())
-		elseif self.battle_info:is_in_battle() then
-			local battleserver = skynet.localname(".battleserver")
-			skynet.send(battleserver, "lua", "battle_end", 
-				self.battle_info:get_battle_id(), self:get_id(), 3)
 		end
 		self.battle_info:set_free()
 	end

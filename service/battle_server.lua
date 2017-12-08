@@ -1,7 +1,15 @@
 local skynet = require "skynet"
 local log = require "log"
+local pb = require "protobuf"
+local proto = require "protocol"
+
+local cmd = require "proto.cmd"
+local retcode = require "logic.retcode"
 
 local define = require "logic.module.player.define"
+
+local ip, port = ...
+local server_addr = ip .. ":" .. tostring(port)
 
 local battle_id_cnt = 1
 local battles = {}
@@ -40,95 +48,14 @@ local function random_cards(cards)
 	return random_cards_info
 end
 
-local post_frame
-local FRAME_INTERVAL = 20
-local CHECK_INTERVAL = 1
--- Note: slot must an integer.
-local slot = FRAME_INTERVAL / CHECK_INTERVAL
-local time_slot = {}
-local temp_list = {}
-local start_time
-
-local function battle_end_routine(battle_id)
-	assert(battle_id and battles[battle_id])
-	local battle = assert(battles[battle_id])
-	for player_id,player_info in pairs(battle.players_info) do
-		skynet.send(player_info.player_addr, "lua", "battle_end", 
-			player_info.result)
+local function response(source, session, command, protoname, resp)
+	local data = pb.encode(protoname, resp)
+	local r = proto.serialize(session, command, data)
+	if not r then
+		log("protocol serialization error!")
+		return
 	end
-	battles[battle_id] = nil
-end
-
-local function post_frame_routine(battle_id)
-	local battle = assert(battles[battle_id])
-	local s2c_battle_frame_update = {
-		frame_id = battle.frame_id,
-		battle_actions = {},
-	}
-	battle.frame_id = battle.frame_id + 1
-	for _,player_info in pairs(battle.players_info) do
-		local player_id = player_info.player_id
-		local action_list = battle.player_actions[player_id]
-		if action_list == nil then
-			action_list = {
-				{
-					class_id = 0,
-					action = "",
-				},
-			}
-		end
-		local battle_action = {
-			player_id = player_id,
-			actions = action_list,
-		}
-		table.insert(s2c_battle_frame_update.battle_actions, battle_action)
-		battle.player_actions[player_id] = nil
-	end
-	for _,player_info in pairs(battle.players_info) do
-		if player_info.endflag == nil then
-			skynet.send(player_info.player_addr, "lua", "battle_frame_update", 
-				s2c_battle_frame_update)
-		end
-	end
-end
-
-post_frame = function ()
-	skynet.timeout(CHECK_INTERVAL, post_frame)
-	local cur_time = skynet.now()
-	local interval = cur_time - start_time
-	-- interval begin from 1 and we need index from 1 to slot
-	local index = (interval / CHECK_INTERVAL) % slot
-	if index == 0 then
-		index = slot
-	end
-	local idx = 1
-	while idx <= #time_slot[index] do
-		local battle_id = time_slot[index][idx]
-		local battle = assert(battles[battle_id])
-		if battle.endflag then
-			table.remove(time_slot[index], idx)
-			battle_end_routine(battle_id)
-		else
-			idx = idx + 1
-			post_frame_routine(battle_id)
-		end
-	end
-	while true do
-		local battle_id = temp_list[1]
-		if battle_id == nil then
-			break
-		end
-		local battle = assert(battles[battle_id])
-		battle.frame_id = 1
-		battle.start_time = cur_time
-		table.insert(time_slot[index], battle_id)
-		table.remove(temp_list, 1)
-	end
-end
-
-local function battle_routine(battle_id)
-	assert(battle_id and battles[battle_id])
-	table.insert(temp_list, battle_id)
+	skynet.send(source, "lua", "response", session, r)
 end
 
 local CMD = {}
@@ -169,86 +96,95 @@ function CMD.create_battle(battle_players)
 		random = random,
 		team_amount = team_amount,
 		players_info = players_info_record,
-		ready_player_cnt = 0,
-		end_player_cnt = 0,
-		start_time = 0,
-		frame_id = 0,
-		player_actions = {},
 	}
 	local s2c_battle_init = {
 		battle_id = battle_id,
 		random = random,
+		server_addr = server_addr,
 		team_amount = team_amount,
 		players_info = players_info,
 	}
+
+	local battle_service = skynet.newservice("battle")
+	skynet.call(battle_service, "lua", "init", battles[battle_id])
+	battles[battle_id].service = battle_service
+	battles[battle_id].ready_player_cnt = 0
+
 	for _,battle_player in ipairs(battle_players) do
 		local player_addr = battle_player.addr
-		skynet.send(player_addr, "lua", "battle_init", 
-			s2c_battle_init, skynet.self())
+		skynet.send(player_addr, "lua", "battle_init", s2c_battle_init)
 	end
 end
 
-function CMD.battle_ready(battle_id, player_id)
-	assert(battle_id and player_id)
-	local battle = assert(battles[battle_id])
-	local players_info = battle.players_info
-	local battle_player = assert(players_info[player_id])
+function CMD.dispatch(source, sess, req_cmd, msg)
+	if req_cmd ~= cmd.BATTLE_READY then
+		log("Battle server get unexpected cmd[%d].", req_cmd)
+		--skynet.call(source, "lua", "force_close")
+		return
+	end
+	local args, err = pb.decode("protocol.c2s_battle_ready", msg)
+	if args == false then
+		log("protobuf decode error: %s.", err)
+		return
+	end
+	local s2c_battle_ready = {
+		code = 0,
+	}
+	local battle_id = args.battle_id
+	local player_id = args.player_id
+	local battle = battles[battle_id]
+	if battle == nil then
+		log("Battle(%d) not found.", battle_id)
+		s2c_battle_ready.code = retcode.BATTLE_NOT_FOUND
+		response(source, sess, req_cmd, 
+			"protocol.s2c_battle_ready", s2c_battle_ready)
+		return
+	end
+	local battle_player = battle.players_info[player_id]
+	if battle_player == nil then
+		log("Player(%d) not in Battle(%d).", player_id, battle_id)
+		s2c_battle_ready.code = retcode.PLAYER_NOT_IN_BATTLE
+		response(source, sess, req_cmd, 
+			"protocol.s2c_battle_ready", s2c_battle_ready)
+		return
+	end
+
+	response(source, sess, req_cmd, 
+		"protocol.s2c_battle_ready", s2c_battle_ready)
+
 	if battle_player.ready == nil then
 		battle_player.ready = true
 		battle.ready_player_cnt = battle.ready_player_cnt + 1
+		skynet.call(source, "lua", "change_dest", battle.service)
+		skynet.send(battle.service, "lua", "ready", source, player_id)
 		if battle.ready_player_cnt == battle.team_amount * 2 then
-			for _,player_info in pairs(players_info) do
-				skynet.send(player_info.player_addr, "lua", "battle_start")
-			end
-			skynet.fork(battle_routine, battle_id)
+			skynet.send(battle.service, "lua", "start")
 		end
 	end
 end
 
-function CMD.battle_action(battle_id, player_id, action)
-	assert(battle_id and player_id and action)
-	local battle = assert(battles[battle_id])
-	if battle.player_actions[player_id] == nil then
-		battle.player_actions[player_id] = {}
-	end
-	table.insert(battle.player_actions[player_id], action)
-end
-
-function CMD.battle_end(battle_id, player_id, result)
-	local battle = assert(battles[battle_id])
-	local players_info = battle.players_info
-	local battle_player = assert(players_info[player_id])
-	if battle_player.endflag== nil then
-		battle_player.endflag = true
-		battle_player.end_result = result
-		battle.end_player_cnt = battle.end_player_cnt + 1
-		if battle.end_player_cnt == battle.team_amount * 2 then
-			battle.endflag = true
-		end
-	end
+function CMD.conn_abort()
+	return
 end
 
 skynet.init( function ()
 	math.randomseed(os.time())
+	local files = {
+		"battle/battle_ready.pb",
+	}
+	for _,file in ipairs(files) do
+		pb.register_file(skynet.getenv("root") .. "proto/" .. file)
+	end
 end)
 
 skynet.start( function ()
 	skynet.dispatch("lua", function (sess, src, command, ...)
 		local f = CMD[command]
 		if f then
-			if sess ~= 0 then
-				skynet.ret(skynet.pack(f(...)))
-			else
-				f(...)
-			end
+			skynet.ret(skynet.pack(f(...)))
 		else
 			log("Unknown battle server command: %s.", command)
 			skynet.response()(false)
 		end
 	end)
-	start_time = skynet.now()
-	for i=1,slot do
-		time_slot[i] = {}
-	end
-	skynet.timeout(CHECK_INTERVAL, post_frame)
 end)
