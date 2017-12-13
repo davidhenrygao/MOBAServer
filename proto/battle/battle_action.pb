@@ -1,8 +1,9 @@
 
-y
-battle_action.protoprotocol"5
+‹
+battle_action.protoprotocol"G
 c2s_battle_action
-class_id (
-action (	"!
+frame_id (
+class_id (
+action (	"!
 s2c_battle_action
 code (

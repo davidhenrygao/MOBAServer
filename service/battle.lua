@@ -4,6 +4,7 @@ local pb = require "protobuf"
 local proto = require "protocol"
 
 local cmd = require "proto.cmd"
+local retcode = require "logic.retcode"
 
 local battle
 
@@ -82,21 +83,25 @@ end
 
 local CMD = {}
 
-function CMD.ready(_, conn, player_id)
-	local player_info = assert(battle.players_info[player_id])
-	player_info.ready = true
-	player_info.conn = conn
-end
-
-function CMD.start()
-	battle.start_time = skynet.now()
-	battle.frame_id = 1
-	battle.player_actions = {}
-	skynet.timeout(FRAME_INTERVAL, post_frame)
+local function do_battle_start()
 	local s2c_battle_start = {}
 	for player_id,player_info in pairs(battle.players_info) do
 		push(player_info.conn, cmd.BATTLE_START, 
 			"protocol.s2c_battle_start", s2c_battle_start)
+	end
+	battle.start_time = skynet.now()
+	battle.frame_id = 1
+	battle.player_actions = {}
+	skynet.timeout(FRAME_INTERVAL, post_frame)
+end
+
+function CMD.ready(_, conn, player_id)
+	local player_info = assert(battle.players_info[player_id])
+	player_info.ready = true
+	player_info.conn = conn
+	battle.ready_player_cnt = battle.ready_player_cnt + 1
+	if battle.ready_player_cnt == battle.team_amount * 2 then
+		do_battle_start()
 	end
 end
 
@@ -106,13 +111,21 @@ local function handle_battle_action(source, sess, req_cmd, msg, player_info)
 		log("protobuf decode error: %s.", err)
 		return
 	end
+	local s2c_battle_action = {
+		code = 0,
+	}
+	if args.frame_id ~= battle.frame_id then
+		log("Receive frame id(%d) not equal to battle next frame id(%d).", 
+			args.frame_id, battle.frame_id)
+		s2c_battle_action.code = retcode.BATTLE_ACTION_FRAME_ID_ERROR
+		response(source, sess, req_cmd, 
+			"protocol.s2c_battle_action", s2c_battle_action)
+		return
+	end
 	local player_id = player_info.player_id
 	local action = {
 		class_id = args.class_id,
 		action = args.action,
-	}
-	local s2c_battle_action = {
-		code = 0,
 	}
 	if battle.player_actions[player_id] == nil then
 		battle.player_actions[player_id] = {}
@@ -189,6 +202,7 @@ end
 
 function CMD.init(_, battle_info)
 	battle = battle_info
+	battle.ready_player_cnt = 0
 end
 
 skynet.init( function ()

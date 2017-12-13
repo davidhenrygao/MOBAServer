@@ -78,6 +78,7 @@ function CMD.create_battle(battle_players)
 		local battle_player_info = {
 			player_id = player_info.id,
 			player_level = player_info.level,
+			player_name = player_info.name,
 			team = team,
 			random_cards_info = random_player_cards,
 		}
@@ -85,6 +86,7 @@ function CMD.create_battle(battle_players)
 		local battle_player_info_record = {
 			player_id = player_info.id,
 			player_level = player_info.level,
+			player_name = player_info.name,
 			player_addr = player_addr,
 			team = team,
 			random_cards_info = random_player_cards,
@@ -108,7 +110,6 @@ function CMD.create_battle(battle_players)
 	local battle_service = skynet.newservice("battle")
 	skynet.call(battle_service, "lua", "init", battles[battle_id])
 	battles[battle_id].service = battle_service
-	battles[battle_id].ready_player_cnt = 0
 
 	for _,battle_player in ipairs(battle_players) do
 		local player_addr = battle_player.addr
@@ -154,12 +155,8 @@ function CMD.dispatch(source, sess, req_cmd, msg)
 
 	if battle_player.ready == nil then
 		battle_player.ready = true
-		battle.ready_player_cnt = battle.ready_player_cnt + 1
 		skynet.call(source, "lua", "change_dest", battle.service)
 		skynet.send(battle.service, "lua", "ready", source, player_id)
-		if battle.ready_player_cnt == battle.team_amount * 2 then
-			skynet.send(battle.service, "lua", "start")
-		end
 	end
 end
 

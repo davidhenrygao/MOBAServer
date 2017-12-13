@@ -1,17 +1,22 @@
 package protocol;
 
 enum cmd {
-    //0-99 common use
-    HEARTBEAT = 1;
-    ECHO = 2;
-    LOGOUT = 3;
+	//0-99 common use
+	HEARTBEAT = 1;
+	ECHO = 2;
+	LOGOUT = 3;
 
-    //100-199 login server use
-    LOGIN_CHALLENGE = 100;
-    LOGIN_EXCHANGEKEY= 101;
-    LOGIN_HANDSHAKE = 102;
-    LOGIN = 103;
-    LOGIN_LAUNCH = 104;
+	//100-199 login server use
+	LOGIN_CHALLENGE = 100;
+	LOGIN_EXCHANGEKEY= 101;
+	LOGIN_HANDSHAKE = 102;
+	LOGIN = 103;
+	LOGIN_LAUNCH = 104;
+
+	//200-299 player basic module use
+	UPDATE_PLAYER_PROPERTYS = 200;
+	GM_CHANGE_PLAYER_PROPERTY = 201;
+	KICK_OUT_PLAYER = 203;
 
 	//1000-1099 card module use
 	LOAD_CARDS = 1000;
@@ -22,5 +27,16 @@ enum cmd {
 	CHANGE_CARD_DECK = 1005;
 	UPDATE_CARDS = 1006;
 	GM_GET_CARD = 1007;
+
+	//10000-10999 battle module use
+	MATCH_START = 10000;
+	MATCH_CANCEL = 10001;
+	MATCH_UPDATE = 10002;
+	BATTLE_INIT = 10003;
+	BATTLE_READY = 10004;
+	BATTLE_START = 10005;
+	BATTLE_ACTION = 10006;
+	BATTLE_FRAME_UPDATE = 10007;
+	BATTLE_END = 10008;
 };
 

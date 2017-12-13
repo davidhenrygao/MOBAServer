@@ -42,6 +42,7 @@ local function execute_f(req, resp_f)
 	local player_match_info = {
 		id = player:get_id(),
 		level = player:get_level(),
+		name = player:get_name(),
 		cards = player:get_cur_card_deck_info(),
 		type = matchtype,
 	}

@@ -9,7 +9,8 @@ message s2c_battle_init {
 	message battle_player_info {
 		required uint64 player_id = 1;
 		required uint32 player_level = 2;
-		required uint32 team = 3;    //阵营：0（己方）；1（敌方）；2（第三方）
+		required string player_name = 3;
+		required uint32 team = 4;    //阵营：0（己方）；1（敌方）；2（第三方）
 		
 		message battle_card_info {
 			required uint32 card_id = 1;    //卡牌配表id
@@ -17,7 +18,7 @@ message s2c_battle_init {
 			optional uint32 pos = 3;
 		};
 
-		repeated battle_card_info random_cards_info = 4;    //随机牌阵列表
+		repeated battle_card_info random_cards_info = 5;    //随机牌阵列表
 	};
 
 	repeated battle_player_info players_info = 5;    //匹配玩家信息

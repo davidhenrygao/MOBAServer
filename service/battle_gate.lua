@@ -9,7 +9,7 @@ local conns = {}
 local battleserver
 
 local function accept_cb(fd, ip)
-	log("%s accept connection[%d] from ip[%s]", data.name, fd, ip)
+	log("battle_gate accept connection[%d] from ip[%s]", fd, ip)
 	local conn = skynet.newservice("connection")
 	skynet.call(conn, "lua", "start", {
 		fd = fd,

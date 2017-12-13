@@ -97,6 +97,10 @@ function M:get_level()
 	return self.basic_info.level
 end
 
+function M:get_name()
+	return self.basic_info.name
+end
+
 function M:get_player_state()
 	return self.state
 end
