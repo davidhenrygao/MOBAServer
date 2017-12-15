@@ -8,7 +8,7 @@ local PLAYER_UUID_COUNTER = "player_uuid_counter"
 local CMD = {}
 
 function CMD.get_player_uuid()
-	uuid = db:get(PLAYER_UUID_COUNTER)
+	local uuid = db:get(PLAYER_UUID_COUNTER)
 	db:INCR(PLAYER_UUID_COUNTER)
 	return tonumber(uuid)
 end
